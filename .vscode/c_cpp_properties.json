@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/Users/spluta1/Documents/SC/SuperColliderBuild/SuperCollider/**",
+                "/Users/spluta1/Documents/SC/SuperColliderBuild/SuperCollider/include/plugin_interface",
+                "/Users/spluta1/Documents/SC/SuperColliderBuild/SuperCollider/include/common",
+                "/Users/spluta1/Downloads/portedplugins-main/plugins/**"
+            ],
+            "defines": [],
+            "macFrameworkPath": [
+                "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks"
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "macos-clang-arm64",
+            "configurationProvider": "ms-vscode.makefile-tools"
+        }
+    ],
+    "version": 4
+}
