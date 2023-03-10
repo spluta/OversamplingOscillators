@@ -14,5 +14,6 @@ if(APPLE OR WIN32)
 set(CMAKE_SHARED_MODULE_SUFFIX ".scx")
 endif()
 
-add_library(OSaw2 MODULE OversamplingOscillators.cpp)
-add_library(OVarSaw2 MODULE OversamplingOscillators.cpp)
+add_library(SawOS MODULE OversamplingOscillators.cpp)
+add_library(VarSawOS MODULE OversamplingOscillators.cpp)
+add_library(SawPn MODULE OversamplingOscillators.cpp)
