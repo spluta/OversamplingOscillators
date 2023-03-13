@@ -122,24 +122,30 @@ namespace VarSawOS
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
     if (inRate(0) == 2)
-      mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_a>();
+      if (inRate(2)==2)
+        mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_aa>();
+      else
+        mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_ak>();
     else
-      mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_k>();
-    next_a(1);
+      if (inRate(2)==2)
+        mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_ka>();
+      else
+        mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_kk>();
+    next_aa(1);
   }
 
   VarSawOS::~VarSawOS() {}
 
-  void VarSawOS::next_a(int nSamples)
+  void VarSawOS::next_ak(int nSamples)
   {
 
     const float *freq = in(Freq);
 
     float *outbuf = out(Out1);
-    float nextDuty = sc_clip(in0(Duty), 0.001, 0.999);
-    float duty = m_duty;
-    float invduty = 2.f / duty;
-    float inv1duty = 2.f / (1 - duty);
+    float nextWidth = sc_clip(in0(Width), 0.001, 0.999);
+    float width = m_width;
+    float invwidth = 2.f / width;
+    float inv1width = 2.f / (1 - width);
 
     int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
     if (osIndexIn != m_oversamplingIndex)
@@ -160,12 +166,12 @@ namespace VarSawOS
         if (m_phase >= 1.f)
         {
           m_phase -= 1.f;
-          duty = m_duty = sc_clip(nextDuty, 0.001, 0.999);
-          invduty = m_invduty = 2.f / duty;
-          inv1duty = m_inv1duty = 2.f / (1.f - duty);
+          width = m_width = sc_clip(nextWidth, 0.001, 0.999);
+          invwidth = m_invwidth = 2.f / width;
+          inv1width = m_inv1width = 2.f / (1.f - width);
         }
 
-        float z = m_phase < duty ? m_phase * invduty : (1.f - m_phase) * inv1duty;
+        float z = m_phase < width ? m_phase * invwidth : (1.f - m_phase) * inv1width;
         osBuffer[k] = z;
         m_phase += phaseInc;
       }
@@ -181,16 +187,69 @@ namespace VarSawOS
     }
   }
 
-  void VarSawOS::next_k(int nSamples)
+  void VarSawOS::next_aa(int nSamples)
+  {
+
+    const float *freq = in(Freq);
+    const float *inWidth = in(Width);
+    float *outbuf = out(Out1);
+
+    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
+    if (osIndexIn != m_oversamplingIndex)
+    {
+      m_oversamplingIndex = osIndexIn;
+      oversample.setOversamplingIndex(m_oversamplingIndex);
+    }
+
+    // float y;
+    float *osBuffer = oversample.getOSBuffer();
+
+    for (int i = 0; i < nSamples; ++i)
+    {
+      float phaseInc = freq[i] * m_freqMul / (float)oversample.getOversamplingRatio();
+
+      float nextWidth = sc_clip(inWidth[i], 0.001, 0.999);
+      float width = m_width;
+      float invwidth = 2.f / width;
+      float inv1width = 2.f / (1 - width);
+
+      for (int k = 0; k < oversample.getOversamplingRatio(); k++)
+      {
+        if (m_phase >= 1.f)
+        {
+          m_phase -= 1.f;
+          width = m_width = sc_clip(nextWidth, 0.001, 0.999);
+          invwidth = m_invwidth = 2.f / width;
+          inv1width = m_inv1width = 2.f / (1.f - width);
+        }
+
+        float z = m_phase < width ? m_phase * invwidth : (1.f - m_phase) * inv1width;
+        osBuffer[k] = z;
+        m_phase += phaseInc;
+      }
+      if (m_oversamplingIndex != 0)
+      {
+        float y = oversample.downsample();
+        outbuf[i] = y - 1.f;
+      }
+      else
+      {
+        outbuf[i] = osBuffer[0];
+      }
+    }
+  }
+
+  void VarSawOS::next_kk(int nSamples)
   {
 
     SlopeSignal<float> slopedFreq = makeSlope(in0(Freq), m_freq_past);
+    const float *inWidth = in(Width);
 
     float *outbuf = out(Out1);
-    float nextDuty = sc_clip(in0(Duty), 0.001, 0.999);
-    float duty = m_duty;
-    float invduty = 2.f / duty;
-    float inv1duty = 2.f / (1 - duty);
+    float nextWidth = sc_clip(in0(Width), 0.001, 0.999);
+    float width = m_width;
+    float invwidth = 2.f / width;
+    float inv1width = 2.f / (1 - width);
 
     int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
     if (osIndexIn != m_oversamplingIndex)
@@ -204,6 +263,8 @@ namespace VarSawOS
     for (int i = 0; i < nSamples; ++i)
     {
       const float freq = slopedFreq.consume();
+
+
       float phaseInc = freq * m_freqMul / oversample.getOversamplingRatio();
 
       for (int k = 0; k < oversample.getOversamplingRatio(); k++)
@@ -211,12 +272,71 @@ namespace VarSawOS
         if (m_phase >= 1.f)
         {
           m_phase -= 1.f;
-          duty = m_duty = sc_clip(nextDuty, 0.001, 0.999);
-          invduty = m_invduty = 2.f / duty;
-          inv1duty = m_inv1duty = 2.f / (1.f - duty);
+          width = m_width = sc_clip(nextWidth, 0.001, 0.999);
+          invwidth = m_invwidth = 2.f / width;
+          inv1width = m_inv1width = 2.f / (1.f - width);
         }
 
-        float z = m_phase < duty ? m_phase * invduty : (1.f - m_phase) * inv1duty;
+        float z = m_phase < width ? m_phase * invwidth : (1.f - m_phase) * inv1width;
+        osBuffer[k] = z;
+        m_phase += phaseInc;
+      }
+      if (m_oversamplingIndex != 0)
+      {
+        float y = oversample.downsample();
+        outbuf[i] = y - 1.f;
+      }
+      else
+      {
+        outbuf[i] = osBuffer[0];
+      }
+    }
+    m_freq_past = slopedFreq.value;
+  }
+
+  void VarSawOS::next_ka(int nSamples)
+  {
+
+    SlopeSignal<float> slopedFreq = makeSlope(in0(Freq), m_freq_past);
+    const float *inWidth = in(Width);
+
+    float *outbuf = out(Out1);
+    float nextWidth = sc_clip(in0(Width), 0.001, 0.999);
+    float width = m_width;
+    float invwidth = 2.f / width;
+    float inv1width = 2.f / (1 - width);
+
+    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
+    if (osIndexIn != m_oversamplingIndex)
+    {
+      m_oversamplingIndex = osIndexIn;
+      oversample.setOversamplingIndex(m_oversamplingIndex);
+    }
+
+    float *osBuffer = oversample.getOSBuffer();
+
+    for (int i = 0; i < nSamples; ++i)
+    {
+      const float freq = slopedFreq.consume();
+
+      float nextWidth = sc_clip(inWidth[i], 0.001, 0.999);
+      float width = m_width;
+      float invwidth = 2.f / width;
+      float inv1width = 2.f / (1 - width);
+
+      float phaseInc = freq * m_freqMul / oversample.getOversamplingRatio();
+
+      for (int k = 0; k < oversample.getOversamplingRatio(); k++)
+      {
+        if (m_phase >= 1.f)
+        {
+          m_phase -= 1.f;
+          width = m_width = sc_clip(nextWidth, 0.001, 0.999);
+          invwidth = m_invwidth = 2.f / width;
+          inv1width = m_inv1width = 2.f / (1.f - width);
+        }
+
+        float z = m_phase < width ? m_phase * invwidth : (1.f - m_phase) * inv1width;
         osBuffer[k] = z;
         m_phase += phaseInc;
       }
@@ -259,6 +379,8 @@ namespace SawPn
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
+    m_counter = 0;
+
     if (inRate(0) == 2)
       mCalcFunc = make_calc_function<SawPn, &SawPn::next_a>();
     else
@@ -278,13 +400,12 @@ namespace SawPn
     {
       float lastFreq = m_freq;
 
-      m_counter = m_counter + 1;
-
       m_freq = abs(freq[i]);
+      m_freq = sc_max(m_freq, 0.0001);
 
       float lastPhase = m_phase;
-      float lastPoly = m_poly;
-
+      float lastPoly4 = m_poly4;
+      float lastPoly2 = m_poly2;
       float p0n = sampleRate() / lastFreq;
 
       m_phase += lastFreq * m_freqMul;
@@ -293,33 +414,46 @@ namespace SawPn
       else if (m_phase <= -1.f)
         m_phase += 2.f;
 
-      m_poly = m_phase * m_phase * (m_phase * m_phase - 2.0);
+      m_poly4 = m_phase * m_phase * (m_phase * m_phase - 2.0);
+      m_poly4 = diff4_1.diff(m_poly4, p0n);
+      m_poly4 = diff4_2.diff(m_poly4, p0n);
+      m_poly4 = diff4_3.diff(m_poly4, p0n);
+      m_poly4 = m_poly4 / 24.f;
 
-      m_poly = diff1.diff(m_poly, p0n);
-      m_poly = diff2.diff(m_poly, p0n);
-      m_poly = diff3.diff(m_poly, p0n);
+      m_poly2 = m_phase * m_phase;
+      m_poly2 = diff2_1.diff(m_poly2, p0n);
+      m_poly2 = m_poly2 / 2.f;
 
-      m_poly = m_poly / 24.f;
 
       float cross = 1.f;
 
-      if (lastFreq < 100)
+      if (lastFreq < 5000)
       {
         cross = 0.f;
       }
-      else if (lastFreq > 500)
+      else if (lastFreq > 10000)
       {
         cross = 1.f;
       }
       else
       {
-        cross = (lastFreq - 100) / 400;
+        cross = (lastFreq - 5000) / 5000;
       }
 
+      if(m_counter < 2)
+        lastPoly2 = 0.f;
       if (m_counter < 4)
-        lastPoly *= 0;
+      {
+        m_counter ++;
+        lastPoly4 = 0.f;
+      }
+      //Print("%f %f \n", lastPoly2, lastPoly4);
+      float out = (lastPoly2 * (1 - cross)) + (lastPoly4 * cross);
 
-      outbuf[i] = lastPhase * (1 - cross) + lastPoly * cross;
+      // if(out>1.f||out<(-1.f))
+      //   Print("%f %f %f \n", lastPoly2, lastPoly4, cross);
+
+      outbuf[i] = out;
     }
   }
 
@@ -332,11 +466,13 @@ namespace SawPn
     for (int i = 0; i < nSamples; ++i)
     {
       float lastFreq = m_freq;
-      m_counter = m_counter + 1;
+      
       m_freq = abs(slopedFreq.consume());
+      m_freq = sc_max(m_freq, 0.0001);
 
       float lastPhase = m_phase;
-      float lastPoly = m_poly;
+      float lastPoly4 = m_poly4;
+      float lastPoly2 = m_poly2;
       float p0n = sampleRate() / lastFreq;
 
       m_phase += lastFreq * m_freqMul;
@@ -345,32 +481,39 @@ namespace SawPn
       else if (m_phase <= -1.f)
         m_phase += 2.f;
 
-      m_poly = m_phase * m_phase * (m_phase * m_phase - 2.0);
+      m_poly4 = m_phase * m_phase * (m_phase * m_phase - 2.0);
+      m_poly4 = diff4_1.diff(m_poly4, p0n);
+      m_poly4 = diff4_2.diff(m_poly4, p0n);
+      m_poly4 = diff4_3.diff(m_poly4, p0n);
+      m_poly4 = m_poly4 / 24.f;
 
-      m_poly = diff1.diff(m_poly, p0n);
-      m_poly = diff2.diff(m_poly, p0n);
-      m_poly = diff3.diff(m_poly, p0n);
+      m_poly2 = m_phase * m_phase;
+      m_poly2 = diff2_1.diff(m_poly2, p0n);
+      m_poly2 = m_poly2 / 2.f;
 
-      m_poly = m_poly / 24.f;
       float cross = 1.f;
 
-      if (lastFreq < 100)
+      if (lastFreq < 5000)
       {
         cross = 0.f;
       }
-      else if (lastFreq > 500)
+      else if (lastFreq > 10000)
       {
         cross = 1.f;
       }
       else
       {
-        cross = (lastFreq - 100) / 400;
+        cross = (lastFreq - 5000) / 5000;
       }
 
+      if(m_counter < 2)
+        lastPoly2 = 0.f;
       if (m_counter < 4)
-        lastPoly *= 0;
-
-      outbuf[i] = lastPhase * (1 - cross) + lastPoly * cross;
+      {
+        m_counter ++;
+        lastPoly4 = 0.f;
+      }
+      outbuf[i] = lastPoly2 * (1 - cross) + lastPoly4 * cross;
     }
   }
 }
