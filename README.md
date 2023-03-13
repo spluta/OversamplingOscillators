@@ -12,6 +12,6 @@ cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DSC_PATH=<PATH TO SC SOURCE> -DPORTED_PATH=<PATH TO PORTED PLUGINS SOURCE>
 cmake --build . --config Release
 
-It should build SawOS.scx, VarSawOS.scx, and SawPn. The OS plugins are Oversampled. The Pn plugins are polynomial bandlimited.
+It should build SawOS, VarSawOS, and SawPn. The OS plugins are Oversampled. The Pn plugins are polynomial bandlimited.
 
 Make sure these two files and OversamplingOscillators.sc are in the SC path, recompile the SC libary, and they should work.# OversamplingOscillators
