@@ -5,6 +5,7 @@
         "locale": "cpp",
         "memory": "cpp",
         "ostream": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "chrono": "cpp"
     }
 }
