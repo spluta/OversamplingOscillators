@@ -1,5 +1,19 @@
 SawOS : UGen {
 	*ar { |freq=440, phase=0, oversample=1, mul = 1, add = 0|
+		if(freq.rate!='audio'){freq = K2A.ar(freq)};
+		^this.multiNew('audio', freq, phase, oversample).madd(mul, add);
+	}
+
+	checkInputs {
+		/* TODO */
+		^this.checkValidInputs;
+	}
+}
+
+SinOscOS : UGen {
+	*ar { |freq=440, phase=0, oversample=1, mul = 1, add = 0|
+		if(freq.rate!='audio'){freq = K2A.ar(freq)};
+		if(phase.rate!='audio'){phase = K2A.ar(phase)};
 		^this.multiNew('audio', freq, phase, oversample).madd(mul, add);
 	}
 
@@ -10,8 +24,8 @@ SawOS : UGen {
 }
 
 SquareOS : UGen {
-	*ar { |freq=440, phase=0, width = 0.5, oversample=1, mul = 1, add = 0|
-		^this.multiNew('audio', freq, phase, width, oversample).madd(mul, add);
+	*ar { |freq=440, iphase=0, width = 0.5, oversample=1, mul = 1, add = 0|
+		^this.multiNew('audio', freq, iphase, width, oversample).madd(mul, add);
 	}
 
 	checkInputs {
@@ -21,8 +35,8 @@ SquareOS : UGen {
 }
 
 TriOS : UGen {
-	*ar { |freq=440, phase=0, oversample=1, mul = 1, add = 0|
-		^this.multiNew('audio', freq, phase, oversample).madd(mul, add);
+	*ar { |freq=440, iphase=0, oversample=1, mul = 1, add = 0|
+		^this.multiNew('audio', freq, iphase, oversample).madd(mul, add);
 	}
 
 	checkInputs {
@@ -43,8 +57,8 @@ VarSawOS : UGen {
 }
 
 SawBL : UGen {
-	*ar { |freq=440, phase=0, mul=1, add=0|
-		^this.multiNew('audio', freq, phase).madd(mul,add);
+	*ar { |freq=440, iphase=0, mul=1, add=0|
+		^this.multiNew('audio', freq, iphase).madd(mul,add);
 	}
 
 	checkInputs {
@@ -78,6 +92,17 @@ TriBL : UGen {
 ImpulseBL : UGen {
 	*ar { |freq=440, mul=1, add=0|
 		^this.multiNew('audio', freq).madd(mul,add);
+	}
+
+	checkInputs {
+		/* TODO */
+		^this.checkValidInputs;
+	}
+}
+
+SawH : UGen {
+	*ar { |freq=440, phase=0, mul=1, add=0|
+		^this.multiNew('audio', freq, phase).madd(mul,add);
 	}
 
 	checkInputs {

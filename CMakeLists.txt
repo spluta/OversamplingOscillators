@@ -15,6 +15,7 @@ set(CMAKE_SHARED_MODULE_SUFFIX ".scx")
 endif()
 
 add_library(SawOS MODULE OversamplingOscillators.cpp)
+add_library(SinOscOS MODULE OversamplingOscillators.cpp)
 add_library(TriOS MODULE OversamplingOscillators.cpp)
 add_library(VarSawOS MODULE OversamplingOscillators.cpp)
 add_library(SquareOS MODULE OversamplingOscillators.cpp)
@@ -22,3 +23,5 @@ add_library(SawBL MODULE OversamplingOscillators.cpp)
 add_library(SquareBL MODULE OversamplingOscillators.cpp)
 add_library(ImpulseBL MODULE OversamplingOscillators.cpp)
 add_library(TriBL MODULE OversamplingOscillators.cpp)
+
+add_library(SawH MODULE OversamplingOscillators.cpp)

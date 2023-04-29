@@ -4,7 +4,6 @@
 
 #include "SC_PlugIn.hpp"
 #include "VariableOversampling.hpp"
-#include "dcblocker.h"
 
 namespace SawOS {
 
@@ -12,7 +11,7 @@ class SawOSNext {
   public:
     SawOSNext();
     ~SawOSNext();
-    void next(float freq, float *m_phase, float *m_freqMul, float *osBuffer, float overSamplingRatio);
+    void next(float freq, float *m_phase, float m_freqMul, float *osBuffer, int overSamplingRatio);
   private:
 
 };
@@ -27,14 +26,11 @@ public:
 
 private:
   // Calc function
-  void next_a(int nSamples);
-  void next_k(int nSamples);
-  //float next(float freq);
+  void next_aa(int nSamples);
   SawOSNext saw;
 
   enum InputParams { Freq, Phase, OverSample, NumInputParams };
   enum Outputs { Out1, NumOutputParams };
-  dcblocker::Dcblocker dcfilter;
 
   float m_freq_past{0.f};
   float m_phase{in0(Phase)};
@@ -43,6 +39,84 @@ private:
 };
 
 } // namespace SawOS
+
+namespace SinOscOS {
+  class SinTable {
+    public:
+      float lookup(float x);
+      SinTable();
+      ~SinTable();
+    private:
+      float table [4097];
+  };
+
+  class SinOSNext {
+    public:
+      SinOSNext();
+      SinOSNext(float startPhase);
+      ~SinOSNext();
+      void next(float freq, float phaseIn, float m_freqMul, float *osBuffer, int overSamplingRatio);
+      
+      
+    private:
+      SawOS::SawOSNext saw;
+      SinTable sinTable;
+
+      float m_lastPhase;
+      float m_phase;
+  };
+
+class SinOscOS : public SCUnit {
+  public:
+    SinOscOS();
+    ~SinOscOS();
+
+    SinOSNext sine;
+    
+    VariableOversampling<> oversample;
+
+  private:
+    // Calc function
+    void next_aa(int nSamples);
+
+    enum InputParams { Freq, Phase, OverSample, NumInputParams };
+    enum Outputs { Out1, NumOutputParams };
+
+    float sample_rate;
+    float m_phaseIn{in0(Phase)};
+    float m_freqMul{2.0f/(float)sampleRate()};
+    int m_oversamplingIndex{(int)in0(OverSample)};
+    float *osBuffer;
+  };
+} //namespace SinOscOS
+
+namespace PMOscOS {
+
+class PMOscOS : public SCUnit {
+  public:
+    PMOscOS();
+    ~PMOscOS();
+
+    SinOscOS::SinOSNext sine0;
+    SinOscOS::SinOSNext sine1;
+
+    VariableOversampling<> oversample;
+
+  private:
+    // Calc function
+    void next_aa(int nSamples);
+
+//carfreq, modfreq, pmindex: 0.0, modphase
+    enum InputParams { CarFreq, ModFreq, PMMul, PMModPhase, OverSample, NumInputParams };
+    enum Outputs { Out1, NumOutputParams };
+
+    float sample_rate;
+    float m_modphase{in0(PMModPhase)};
+    float m_freqMul{2.0f/(float)sampleRate()};
+    int m_oversamplingIndex{(int)in0(OverSample)};
+    float *osBuffer;
+  };
+} //namespace SinOscOS
 
 namespace TriOS {
 class TriOS : public SCUnit {
@@ -62,7 +136,6 @@ private:
 
   enum InputParams { Freq, Phase, OverSample, NumInputParams };
   enum Outputs { Out1, NumOutputParams };
-  dcblocker::Dcblocker dcfilter;
 
   float m_freq_past{0.f};
   float m_phase{in0(Phase)};
@@ -93,7 +166,6 @@ private:
 
   enum InputParams { Freq, Phase, Width, OverSample, NumInputParams };
   enum Outputs { Out1, NumOutputParams };
-  dcblocker::Dcblocker dcfilter;
 
   float m_freq_past{in0(Freq)};
   float m_phase{(float)in0(Phase)};
@@ -128,7 +200,6 @@ private:
 
   enum InputParams { Freq, Phase, Width, OverSample, NumInputParams };
   enum Outputs { Out1, NumOutputParams };
-  dcblocker::Dcblocker dcfilter;
 
   float m_freq_past{in0(Freq)};
   float m_phase{(float)in0(Phase)};
@@ -162,11 +233,6 @@ class SawBLNext {
     float next(float freq, float* phase, int* counter, float sampleRate, float freqMul);
 
   private:
-    // Diff diff6_1;
-    // Diff diff6_2;
-    // Diff diff6_3;
-    // Diff diff6_4;
-    // Diff diff6_5;
 
     Diff diff4_1;
     Diff diff4_2;
@@ -177,38 +243,59 @@ class SawBLNext {
 
 class SawBL : public SCUnit {
 public:
-  
   SawBL();
-
-  // Destructor
   ~SawBL();
 
 private:
   // Calc function
-  //float next(float freq);
   void next_a(int nSamples);
   void next_k(int nSamples);
-  //float diff(float x, int num);
 
   enum InputParams { Freq, Phase, OverSample, NumInputParams };
   enum Outputs { Out1, NumOutputParams };
 
   float m_freq{abs(in0(Freq))};
   float m_phase{in0(Phase)};
-  //float m_p0n = sampleRate()/m_freq; 
   float m_freqMul{2.0f/(float)sampleRate()};
-
-  //const float samplerate{(float)sampleRate()};
 
   int m_counter{0};
 
   float diffArray [3] = {m_phase, m_phase, m_phase};
 
   SawBLNext saw;
-
 };
 
 } // namespace SawBL
+
+
+namespace SawH {
+
+class SawH : public SCUnit {
+public:
+  SawH();
+  ~SawH();
+
+private:
+  // Calc function
+  void next_a(int nSamples);
+  void next_k(int nSamples);
+
+  enum InputParams { Freq, Phase, NumInputParams };
+  enum Outputs { Out1, NumOutputParams };
+
+  float m_freq{abs(in0(Freq))};
+  float m_phase{in0(Phase)};
+  float m_freqMul{2.0f/(float)sampleRate()};
+
+  int m_counter{0};
+
+  float diffArray [3] = {m_phase, m_phase, m_phase};
+
+  SawBL::SawBLNext saw;
+  VariableOversampling<> oversample;
+};
+
+} // namespace SawH
 
 namespace SquareBL {
 
@@ -251,8 +338,6 @@ private:
   void next_ka(int nSamples);
   void next_kk(int nSamples);
 
-  
-  
   //float diff(float x, int num);
 
   enum InputParams { Freq, Phase, Width, NumInputParams };
