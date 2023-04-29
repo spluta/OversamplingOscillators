@@ -11,7 +11,9 @@ class SawOSNext {
   public:
     SawOSNext();
     ~SawOSNext();
-    void next(float freq, float *m_phase, float m_freqMul, float *osBuffer, int overSamplingRatio);
+    float m_lastPhase {0.f};
+    float m_phase {0.f};
+    void next(float freq, float phaseIn, float m_freqMul, float *osBuffer, int overSamplingRatio);
   private:
 
 };
@@ -33,7 +35,7 @@ private:
   enum Outputs { Out1, NumOutputParams };
 
   float m_freq_past{0.f};
-  float m_phase{in0(Phase)};
+  float i_phase{in0(Phase)};
   float m_freqMul{2.0f/(float)sampleRate()};
   int m_oversamplingIndex{0};
 };
@@ -83,10 +85,8 @@ class SinOscOS : public SCUnit {
     enum Outputs { Out1, NumOutputParams };
 
     float sample_rate;
-    float m_phaseIn{in0(Phase)};
     float m_freqMul{2.0f/(float)sampleRate()};
     int m_oversamplingIndex{(int)in0(OverSample)};
-    float *osBuffer;
   };
 } //namespace SinOscOS
 
@@ -110,11 +110,10 @@ class PMOscOS : public SCUnit {
     enum InputParams { CarFreq, ModFreq, PMMul, PMModPhase, OverSample, NumInputParams };
     enum Outputs { Out1, NumOutputParams };
 
-    float sample_rate;
+    float sample_rate{(float)sampleRate()};
     float m_modphase{in0(PMModPhase)};
     float m_freqMul{2.0f/(float)sampleRate()};
     int m_oversamplingIndex{(int)in0(OverSample)};
-    float *osBuffer;
   };
 } //namespace SinOscOS
 
@@ -129,8 +128,7 @@ public:
 
 private:
   // Calc function
-  void next_a(int nSamples);
-  void next_k(int nSamples);
+  void next_aa(int nSamples);
 
   SawOS::SawOSNext saw;
 
@@ -138,7 +136,6 @@ private:
   enum Outputs { Out1, NumOutputParams };
 
   float m_freq_past{0.f};
-  float m_phase{in0(Phase)};
   float m_freqMul{2.0f/(float)sampleRate()};
   int m_oversamplingIndex{0};
 };
@@ -156,11 +153,8 @@ public:
 
 private:
   // Calc function
-  float next(float freq, float width);
+  float next(float freq, float phase, float width);
   void next_aa(int nSamples);
-  void next_ak(int nSamples);
-  void next_ka(int nSamples);
-  void next_kk(int nSamples);
 
   SawOS::SawOSNext saw;
 
@@ -190,11 +184,8 @@ public:
 
 private:
   // Calc function
-  float next(float freq, float width);
+  float next(float freq, float phase, float width);
   void next_aa(int nSamples);
-  void next_ak(int nSamples);
-  void next_ka(int nSamples);
-  void next_kk(int nSamples);
 
   SawOS::SawOSNext saw;
 
@@ -204,7 +195,7 @@ private:
   float m_freq_past{in0(Freq)};
   float m_phase{(float)in0(Phase)};
   float m_width{in0(Width)};
-  float m_freqMul{1.0f/(float)sampleRate()};
+  float m_freqMul{2.0f/(float)sampleRate()};
   int m_oversamplingIndex{0};
 };
 

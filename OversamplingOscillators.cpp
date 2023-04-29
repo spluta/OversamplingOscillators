@@ -19,22 +19,21 @@ namespace SawOS
   SawOSNext::~SawOSNext() {}
 
   // float SawBLNext::next(float freq, float *phase, int *counter, float p0n, float freqMul)
-  void SawOSNext::next(float freq, float *m_phase, float m_freqMul, float *osBuffer, int overSamplingRatio)
+  void SawOSNext::next(float freq, float phaseIn, float m_freqMul, float *osBuffer, int overSamplingRatio)
   {
-
     float phaseDiff = (phaseIn - m_lastPhase);
-    //m_phase = sc_wrap(m_phase, -1.f, 1.f);
     m_lastPhase = phaseIn;
 
     for (int k = 0; k < overSamplingRatio; k++)
     {
-      m_phase += (phaseDiff/overSamplingRatio)
-      *m_phase += freq * m_freqMul / (float)overSamplingRatio;
-      if (*m_phase >= 1.f)
-        *m_phase -= 2.f;
-      else if (*m_phase <= -1.f)
-        *m_phase += 2.f;
-      osBuffer[k] = z;
+      m_phase += (phaseDiff/overSamplingRatio);
+      m_phase += freq * m_freqMul / (float)overSamplingRatio;
+      if (m_phase >= 4.f)
+        m_phase -= 8.f;
+      else if (m_phase <= -4.f)
+        m_phase += 8.f;
+      float out = sc_wrap(m_phase, -1.f, 1.f);
+      osBuffer[k] = out;
     }
   }
 
@@ -47,6 +46,8 @@ namespace SawOS
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
     mCalcFunc = make_calc_function<SawOS, &SawOS::next_aa>();
+    next_aa(1);
+
   }
   SawOS::~SawOS() {}
 
@@ -54,13 +55,14 @@ namespace SawOS
   {
 
     const float *freq = in(Freq);
+    const float *phase = in(Phase);
     float *outbuf = out(Out1);
 
     float *osBuffer = oversample.getOSBuffer();
     for (int i = 0; i < nSamples; ++i)
     {
       float out;
-      saw.next(freq[i], &m_phase, m_freqMul, osBuffer, oversample.getOversamplingRatio());
+      saw.next(freq[i], phase[i], m_freqMul, osBuffer, oversample.getOversamplingRatio());
       if (m_oversamplingIndex != 0)
         out = oversample.downsample();
       else
@@ -97,13 +99,9 @@ namespace SinOscOS
     m_phase = startPhase;
   }
 
-  void SinOSNext::next(float freq, float phaseIn, float m_freqMul, float *osBuffer, int overSamplingRatio)
+  void SinOSNext::next(float freq, float phase, float m_freqMul, float *osBuffer, int overSamplingRatio)
   {
-    m_phase += (phaseIn - m_lastPhase);
-    m_phase = sc_wrap(m_phase, -1.f, 1.f);
-    m_lastPhase = phaseIn;
-
-    saw.next(freq, &m_phase, m_freqMul, osBuffer, overSamplingRatio);
+    saw.next(freq, phase, m_freqMul, osBuffer, overSamplingRatio);
     for (int i2 = 0; i2 < overSamplingRatio; i2++)
       osBuffer[i2] = sinTable.lookup((osBuffer[i2]+1.f)*2048.f);
   }
@@ -113,6 +111,12 @@ namespace SinOscOS
   SinOscOS::SinOscOS()
   {
     sample_rate = sampleRate();
+
+    
+    oversample.reset(sample_rate);
+    m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
+    oversample.setOversamplingIndex(m_oversamplingIndex);
+
     mCalcFunc = make_calc_function<SinOscOS, &SinOscOS::next_aa>();
     next_aa(1);
   }
@@ -125,17 +129,13 @@ namespace SinOscOS
     const float *phase = in(Phase);
     float *outbuf = out(Out1);
 
-    osBuffer = oversample.getOSBuffer();
-    oversample.reset(sample_rate);
-    m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
-    oversample.setOversamplingIndex(m_oversamplingIndex);
+    float *osBuffer = oversample.getOSBuffer();
 
     for (int i = 0; i < nSamples; ++i)
     {
       float out;
-      float phaseIn = phase[i];
 
-      sine.next(freq[i], phaseIn, m_freqMul, osBuffer, oversample.getOversamplingRatio());
+      sine.next(freq[i], phase[i], m_freqMul, osBuffer, oversample.getOversamplingRatio());
       if (m_oversamplingIndex != 0)
         out = oversample.downsample();
       else
@@ -143,87 +143,50 @@ namespace SinOscOS
       outbuf[i] = out;
     }
   }
+}
 
-  // void SinOscOS::next_k(int nSamples)
-  // {
-  //   SlopeSignal<float> slopedFreq = makeSlope(in0(Freq), m_freq_past);
+namespace PMOscOS
+{
+  PMOscOS::PMOscOS()
+  {
+    sample_rate = sampleRate();
 
-  //   float *outbuf = out(Out1);
-
-  //   int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-  //   if (osIndexIn != m_oversamplingIndex)
-  //   {
-  //     m_oversamplingIndex = osIndexIn;
-  //     oversample.setOversamplingIndex(m_oversamplingIndex);
-  //   }
-
-  //   float *osBuffer = oversample.getOSBuffer();
-  //   for (int i = 0; i < nSamples; ++i)
-  //   {
-  //     float out;
-  //     saw.next(slopedFreq.consume(), &m_phase, &m_freqMul, osBuffer, oversample.getOversamplingRatio());
-  //     // make the saw a sine
-  //     for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
-  //       //osBuffer[i2] = sin((osBuffer[i2]+1.f)*pi);
-  //       osBuffer[i2] = sinTable.lookup((osBuffer[i2]+1.f)*2048.f);
-
-  //     if (m_oversamplingIndex != 0)
-  //       out = oversample.downsample();
-  //     else
-  //       out = osBuffer[0];
-  //     outbuf[i] = out;
-  //   }
-  //   m_freq_past = slopedFreq.value;
-  // }
-
-  // void SinOscOS::next(int nSamples, AudioSignal<float> freq, float *outbuf)
-  // {
-  //   float out;
-  //   int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-
-  //   if (osIndexIn != m_oversamplingIndex)
-  //   {
-  //     m_oversamplingIndex = osIndexIn;
-  //     oversample.setOversamplingIndex(m_oversamplingIndex);
-  //   }
-  //   float *osBuffer = oversample.getOSBuffer();
-  //   for (int i = 0; i < nSamples; ++i)
-  //   {
-      
-  //     saw.next(freq.consume(), &m_phase, &m_freqMul, osBuffer, oversample.getOversamplingRatio());
-  //     // make the saw a sin
-  //     for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
-  //       //osBuffer[i2] = sin((osBuffer[i2]+1.f)*pi);
-  //       osBuffer[i2] = sinTable.lookup((osBuffer[i2]+1.f)*2048.f);
-
-  //     if (m_oversamplingIndex != 0)
-  //       out = oversample.downsample();
-  //     else
-  //       out = osBuffer[0];
-  //     outbuf[i] = out;
-  //   }
-  //   //return out;
-  // }
-
-  // void SinOscOS::next_a(int nSamples)
-  // {
-
-  //   AudioSignal<float> freq =  makeSignal(Freq);
-  //   float *outbuf = out(Out1);
-
-  //   next(nSamples, freq, outbuf);
     
-  // }
+    oversample.reset(sample_rate);
+    m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
+    oversample.setOversamplingIndex(m_oversamplingIndex);
 
-  // void SinOscOS::next_k(int nSamples)
-  // {
-  //   SlopeSignal<float> freq = makeSlope(in0(Freq), m_freq_past);
+    mCalcFunc = make_calc_function<PMOscOS, &PMOscOS::next_aa>();
+    next_aa(1);
+  }
+  PMOscOS::~PMOscOS() {}
 
-  //   //AudioSignal<float> freq =  makeSignal(Freq);
-  //   float *outbuf = out(Out1);
+  void PMOscOS::next_aa(int nSamples)
+  {
 
-  //   next(nSamples, freq, outbuf);
-  // }
+    //CarFreq, ModFreq, PMMul, PMModPhase
+    const float *carFreq = in(CarFreq);
+    const float *modFreq = in(ModFreq);
+    const float *pm_mul = in(PMMul);
+    const float *pm_phase = in(PMModPhase);
+    float *outbuf = out(Out1);
+
+    float *osBuffer = oversample.getOSBuffer();
+
+    for (int i = 0; i < nSamples; ++i)
+    {
+      float out;
+
+      sine0.next(modFreq[i], pm_phase[i], m_freqMul, osBuffer, oversample.getOversamplingRatio());
+      sine1.next(carFreq[i], , m_freqMul, osBuffer, oversample.getOversamplingRatio())
+
+      if (m_oversamplingIndex != 0)
+        out = oversample.downsample();
+      else
+        out = osBuffer[0];
+      outbuf[i] = out;
+    }
+  }
 }
 
 namespace TriOS
@@ -236,32 +199,23 @@ namespace TriOS
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
-    if (inRate(0) == 2)
-      mCalcFunc = make_calc_function<TriOS, &TriOS::next_a>();
-    else
-      mCalcFunc = make_calc_function<TriOS, &TriOS::next_k>();
-    next_a(1);
+    mCalcFunc = make_calc_function<TriOS, &TriOS::next_aa>();
+
   }
   TriOS::~TriOS() {}
 
-  void TriOS::next_a(int nSamples)
+  void TriOS::next_aa(int nSamples)
   {
 
     const float *freq = in(Freq);
+    const float *phase = in(Phase);
     float *outbuf = out(Out1);
 
-    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-
-    if (osIndexIn != m_oversamplingIndex)
-    {
-      m_oversamplingIndex = osIndexIn;
-      oversample.setOversamplingIndex(m_oversamplingIndex);
-    }
     float *osBuffer = oversample.getOSBuffer();
     for (int i = 0; i < nSamples; ++i)
     {
       float out;
-      saw.next(freq[i], &m_phase, m_freqMul, osBuffer, oversample.getOversamplingRatio());
+      saw.next(freq[i], phase[i], m_freqMul, osBuffer, oversample.getOversamplingRatio());
       // make the saw a triangle
       for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
         osBuffer[i2] = abs(osBuffer[i2]) * 2 - 1;
@@ -274,35 +228,7 @@ namespace TriOS
     }
   }
 
-  void TriOS::next_k(int nSamples)
-  {
-    SlopeSignal<float> slopedFreq = makeSlope(in0(Freq), m_freq_past);
-
-    float *outbuf = out(Out1);
-
-    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-    if (osIndexIn != m_oversamplingIndex)
-    {
-      m_oversamplingIndex = osIndexIn;
-      oversample.setOversamplingIndex(m_oversamplingIndex);
-    }
-
-    float *osBuffer = oversample.getOSBuffer();
-    for (int i = 0; i < nSamples; ++i)
-    {
-      float out;
-      saw.next(slopedFreq.consume(), &m_phase, m_freqMul, osBuffer, oversample.getOversamplingRatio());
-      // make the saw a triangle
-      for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
-        osBuffer[i2] = abs(osBuffer[i2]) * 2 - 1;
-      if (m_oversamplingIndex != 0)
-        out = oversample.downsample();
-      else
-        out = osBuffer[0];
-      outbuf[i] = out;
-    }
-    m_freq_past = slopedFreq.value;
-  }
+  
 }
 
 namespace VarSawOS
@@ -316,28 +242,20 @@ namespace VarSawOS
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
-    if (inRate(0) == 2)
-      if (inRate(2) == 2)
-        mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_aa>();
-      else
-        mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_ak>();
-    else if (inRate(2) == 2)
-      mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_ka>();
-    else
-      mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_kk>();
+    mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_aa>();
     next_aa(1);
   }
 
   VarSawOS::~VarSawOS() {}
 
-  float VarSawOS::next(float freq, float width)
+  float VarSawOS::next(float freq, float phase, float width)
   {
     float out;
     float invwidth = 2.f / width;
     float inv1width = 2.f / (1 - width);
     float *osBuffer = oversample.getOSBuffer();
 
-    saw.next(freq, &m_phase, m_freqMul, osBuffer, oversample.getOversamplingRatio());
+    saw.next(freq, phase, m_freqMul, osBuffer, oversample.getOversamplingRatio());
     for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
     {
       float temp = osBuffer[i2] / 2 + 0.5;
@@ -350,89 +268,20 @@ namespace VarSawOS
     return out;
   }
 
-  void VarSawOS::next_ak(int nSamples)
-  {
-
-    const float *freq = in(Freq);
-    float *outbuf = out(Out1);
-    float width = in0(Width);
-
-    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-
-    if (osIndexIn != m_oversamplingIndex)
-    {
-      m_oversamplingIndex = osIndexIn;
-      oversample.setOversamplingIndex(m_oversamplingIndex);
-    }
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = next(freq[i], width);
-    }
-  }
-
   void VarSawOS::next_aa(int nSamples)
   {
 
     const float *freq = in(Freq);
+    const float *phase = in(Phase);
     const float *inWidth = in(Width);
     float *outbuf = out(Out1);
 
-    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-    if (osIndexIn != m_oversamplingIndex)
-    {
-      m_oversamplingIndex = osIndexIn;
-      oversample.setOversamplingIndex(m_oversamplingIndex);
-    }
-
     for (int i = 0; i < nSamples; ++i)
     {
-      outbuf[i] = next(freq[i], inWidth[i]);
+      outbuf[i] = next(freq[i], phase[i], inWidth[i]);
     }
   }
 
-  void VarSawOS::next_kk(int nSamples)
-  {
-
-    SlopeSignal<float> slopedFreq = makeSlope(in0(Freq), m_freq_past);
-    const float width = in0(Width);
-
-    float *outbuf = out(Out1);
-
-    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-    if (osIndexIn != m_oversamplingIndex)
-    {
-      m_oversamplingIndex = osIndexIn;
-      oversample.setOversamplingIndex(m_oversamplingIndex);
-    }
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = next(slopedFreq.consume(), width);
-    }
-    m_freq_past = slopedFreq.value;
-  }
-
-  void VarSawOS::next_ka(int nSamples)
-  {
-
-    SlopeSignal<float> slopedFreq = makeSlope(in0(Freq), m_freq_past);
-    const float *inWidth = in(Width);
-    float *outbuf = out(Out1);
-
-    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-    if (osIndexIn != m_oversamplingIndex)
-    {
-      m_oversamplingIndex = osIndexIn;
-      oversample.setOversamplingIndex(m_oversamplingIndex);
-    }
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = next(slopedFreq.consume(), inWidth[i]);
-    }
-    m_freq_past = slopedFreq.value;
-  }
 }
 
 namespace SquareOS
@@ -446,28 +295,20 @@ namespace SquareOS
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
-    if (inRate(0) == 2)
-      if (inRate(2) == 2)
-        mCalcFunc = make_calc_function<SquareOS, &SquareOS::next_aa>();
-      else
-        mCalcFunc = make_calc_function<SquareOS, &SquareOS::next_ak>();
-    else if (inRate(2) == 2)
-      mCalcFunc = make_calc_function<SquareOS, &SquareOS::next_ka>();
-    else
-      mCalcFunc = make_calc_function<SquareOS, &SquareOS::next_kk>();
+    mCalcFunc = make_calc_function<SquareOS, &SquareOS::next_aa>();
     next_aa(1);
   }
 
   SquareOS::~SquareOS() {}
 
-  float SquareOS::next(float freq, float width)
+  float SquareOS::next(float freq, float phase, float width)
   {
     float out;
     float invwidth = 2.f / width;
     float inv1width = 2.f / (1 - width);
     float *osBuffer = oversample.getOSBuffer();
 
-    saw.next(freq, &m_phase, m_freqMul, osBuffer, oversample.getOversamplingRatio());
+    saw.next(freq, phase, m_freqMul, osBuffer, oversample.getOversamplingRatio());
     for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
     {
       float temp = osBuffer[i2] / 2 + 0.5;
@@ -480,88 +321,19 @@ namespace SquareOS
     return out;
   }
 
-  void SquareOS::next_ak(int nSamples)
-  {
-
-    const float *freq = in(Freq);
-    float *outbuf = out(Out1);
-    float width = in0(Width);
-
-    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-
-    if (osIndexIn != m_oversamplingIndex)
-    {
-      m_oversamplingIndex = osIndexIn;
-      oversample.setOversamplingIndex(m_oversamplingIndex);
-    }
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = next(freq[i], width);
-    }
-  }
 
   void SquareOS::next_aa(int nSamples)
   {
 
     const float *freq = in(Freq);
+    const float *phase = in(Phase);
     const float *inWidth = in(Width);
     float *outbuf = out(Out1);
 
-    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-    if (osIndexIn != m_oversamplingIndex)
-    {
-      m_oversamplingIndex = osIndexIn;
-      oversample.setOversamplingIndex(m_oversamplingIndex);
-    }
-
     for (int i = 0; i < nSamples; ++i)
     {
-      outbuf[i] = next(freq[i], inWidth[i]);
+      outbuf[i] = next(freq[i], phase[i], inWidth[i]);
     }
-  }
-
-  void SquareOS::next_kk(int nSamples)
-  {
-
-    SlopeSignal<float> slopedFreq = makeSlope(in0(Freq), m_freq_past);
-    const float width = in0(Width);
-
-    float *outbuf = out(Out1);
-
-    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-    if (osIndexIn != m_oversamplingIndex)
-    {
-      m_oversamplingIndex = osIndexIn;
-      oversample.setOversamplingIndex(m_oversamplingIndex);
-    }
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = next(slopedFreq.consume(), width);
-    }
-    m_freq_past = slopedFreq.value;
-  }
-
-  void SquareOS::next_ka(int nSamples)
-  {
-
-    SlopeSignal<float> slopedFreq = makeSlope(in0(Freq), m_freq_past);
-    const float *inWidth = in(Width);
-    float *outbuf = out(Out1);
-
-    int osIndexIn = sc_clip((int)in0(OverSample), 0, 4);
-    if (osIndexIn != m_oversamplingIndex)
-    {
-      m_oversamplingIndex = osIndexIn;
-      oversample.setOversamplingIndex(m_oversamplingIndex);
-    }
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = next(slopedFreq.consume(), inWidth[i]);
-    }
-    m_freq_past = slopedFreq.value;
   }
 }
 
