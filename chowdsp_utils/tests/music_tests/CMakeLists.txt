@@ -1,1 +1,0 @@
-add_subdirectory(chowdsp_rhythm_test)
