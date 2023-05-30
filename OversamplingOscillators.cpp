@@ -166,6 +166,8 @@ namespace PMOscOS
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
+    osBuffer = oversample.getOSBuffer();
+
     mCalcFunc = make_calc_function<PMOscOS, &PMOscOS::next_aa>();
     next_aa(1);
   }
@@ -180,8 +182,6 @@ namespace PMOscOS
     const float *pm_mul = in(PMMul);
     const float *pm_phase = in(PMModPhase);
     float *outbuf = out(Out1);
-
-    float *osBuffer = oversample.getOSBuffer();
 
     for (int i = 0; i < nSamples; ++i)
     {
@@ -205,11 +205,10 @@ namespace FM7OS
   FM7OS::FM7OS()
   {
     sample_rate = (float)sampleRate();
-    Print("%f ", sample_rate);
     for(int i = 0; i<6; i++)
       oversamples[i].reset(sample_rate);
-    
-    m_oversamplingIndex = sc_clip(m_oversamplingIndex, 0, 4);
+
+    //m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
 
     for(int i = 0; i<6; i++)
       oversamples[i].setOversamplingIndex(m_oversamplingIndex);
@@ -219,8 +218,6 @@ namespace FM7OS
 
     for(int k = 0; k<6; k++)
       osBuffers[k] = oversamples[k].getOSBuffer();
-
-    //Print("%f ", m_freqMul);
 
     mCalcFunc = make_calc_function<FM7OS, &FM7OS::next_aa>();
     next_aa(1);
@@ -245,7 +242,7 @@ namespace FM7OS
 
     for (int i = 0; i < nSamples; ++i)
     {
-      
+      //Print("%i %i ", m_oversampleRatio, m_oversamplingIndex);
       float outSamps[6] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
       for(int k = 0; k<m_oversampleRatio; k++){
         for (int sineNum = 0; sineNum < 6; sineNum++){
@@ -256,10 +253,6 @@ namespace FM7OS
         }
 
       }
-
-      // for (int sineNum = 0; sineNum < 6; sineNum++)
-      //   Print("%f ", freqs2[sineNum]);
-      // Print("\n");
 
       for (int k = 0; k<6; k++){
         if (m_oversamplingIndex != 0)
@@ -280,20 +273,17 @@ namespace PM7OS
     sample_rate = sampleRate();
     for(int i = 0; i<6; i++)
       oversamples[i].reset(sample_rate);
-    
-    m_oversamplingIndex = sc_clip(m_oversamplingIndex, 0, 4);
+
+    //m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
 
     for(int i = 0; i<6; i++)
       oversamples[i].setOversamplingIndex(m_oversamplingIndex);
     
     m_oversampleRatio = oversamples[0].getOversamplingRatio();
-
     m_freqMul = m_freqMul/(float)m_oversampleRatio;
 
     for(int k = 0; k<6; k++)
       osBuffers[k] = oversamples[k].getOSBuffer();
-
-    
 
     mCalcFunc = make_calc_function<PM7OS, &PM7OS::next_aa>();
     next_aa(1);
@@ -316,6 +306,7 @@ namespace PM7OS
 
     for (int i = 0; i < nSamples; ++i)
     {
+      //Print("%i %i ", m_oversampleRatio, m_oversamplingIndex);
       float outSamps[6] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
       for(int k = 0; k<m_oversampleRatio; k++){
         

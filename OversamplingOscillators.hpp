@@ -101,6 +101,8 @@ class PMOscOS : public SCUnit {
 
     VariableOversampling<> oversample;
 
+    float *osBuffer;
+
   private:
     // Calc function
     void next_aa(int nSamples);
@@ -142,8 +144,8 @@ class FM7OS : public SCUnit {
     float m_phases[6] = {in0(ctl1),in0(ctl4),in0(ctl7),in0(ctl0),in0(ctl3),in0(ctl6)};
 
     float m_freqMul{2.0f/(float)sampleRate()};
-    int m_oversamplingIndex{4}; //
-    int m_oversampleRatio{16};
+    int m_oversamplingIndex{sc_clip((int)in0(OverSample), 0, 4)};
+    int m_oversampleRatio{(int)pow(2, m_oversamplingIndex)};
   };
 } //namespace FM7OS
 
@@ -172,8 +174,8 @@ class PM7OS : public SCUnit {
     float m_phases[6] = {in0(ctl1),in0(ctl4),in0(ctl7),in0(ctl0),in0(ctl3),in0(ctl6)};
 
     float m_freqMul{2.0f/(float)sampleRate()};
-    int m_oversamplingIndex{4}; //
-    int m_oversampleRatio{16};
+    int m_oversamplingIndex{sc_clip((int)in0(OverSample), 0, 4)};
+    int m_oversampleRatio{(int)pow(2, m_oversamplingIndex)};
   };
 } //namespace PM7OS
 

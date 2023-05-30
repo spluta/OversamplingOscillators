@@ -41,28 +41,6 @@ PMOscOS : UGen {//CarFreq, ModFreq, PMMul, PMModPhase, OverSample
 
 FM7OS : MultiOutUGen  {
 	*numOperators { ^6 }
-	*numControls { ^3 }
-	*controlArraySize { ^this.numControls * this.numOperators }
-	*modArraySize { ^this.numOperators.squared }
-	*numRequiredInputs { ^this.controlArraySize + this.modArraySize }
-	*controlMatrix { | ... args |
-		var matrix;
-		matrix = Array.fill2D(this.numOperators, this.numControls, 0);
-		args.do { | x |
-			matrix[x[0]] = x.copyToEnd(1);
-		};
-		^matrix
-	}
-	*modMatrix { | ... args |
-		var matrix;
-		matrix = Array.fill2D(this.numOperators, this.numOperators, 0);
-		args.do { | x |
-			matrix[x[0]][x[1]] = x[2];
-		};
-		matrix.postln;
-		^matrix
-	}
-
 	*ar { | ctlMatrix, modMatrix, oversample=4, mul=1, add=0 |
 		ctlMatrix = (ctlMatrix ?? { this.controlMatrix })
 		.collect{|item|
@@ -81,6 +59,7 @@ FM7OS : MultiOutUGen  {
 			['audio']
 			++ ctlMatrix
 			++ modMatrix
+			++ oversample
 		).madd(mul,add)
 	}
 
@@ -89,9 +68,9 @@ FM7OS : MultiOutUGen  {
 		^this.initOutputs(this.class.numOperators, rate)
 	}
 	checkInputs {
-		^if (inputs.size != this.class.numRequiredInputs) {
-			this.class.numRequiredInputs.asString + "inputs required (" ++ inputs.size ++ ")"
-		}
+		/*^if (inputs.size != this.class.numRequiredInputs) {
+		this.class.numRequiredInputs.asString + "inputs required (" ++ inputs.size ++ ")"*/
+		^this.checkValidInputs;
 	}
 }
 
@@ -100,7 +79,6 @@ PM7OS : MultiOutUGen {
 	*numControls { ^3 }
 	*controlArraySize { ^this.numControls * this.numOperators }
 	*modArraySize { ^this.numOperators.squared }
-	*numRequiredInputs { ^this.controlArraySize + this.modArraySize }
 
 	*controlMatrix { | ... args |
 		var matrix;
@@ -418,7 +396,7 @@ PM7OS : MultiOutUGen {
 			['audio']
 			++ ctlMatrix
 			++ modMatrix
-			//++oversample
+			++ oversample
 		).madd(mul,add)
 	}
 	*arAlgo { | algo=0, ctlMatrix, feedback=0.0 |
@@ -432,9 +410,7 @@ PM7OS : MultiOutUGen {
 		^this.initOutputs(this.class.numOperators, rate)
 	}
 	checkInputs {
-		^if (inputs.size != this.class.numRequiredInputs) {
-			this.class.numRequiredInputs.asString + "inputs required (" ++ inputs.size ++ ")"
-		}
+		^this.checkValidInputs;
 	}
 }
 
