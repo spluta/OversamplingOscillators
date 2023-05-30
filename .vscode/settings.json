@@ -6,6 +6,8 @@
         "memory": "cpp",
         "ostream": "cpp",
         "ios": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "*.ipp": "cpp",
+        "random": "cpp"
     }
 }

@@ -1,0 +1,35 @@
+message(STATUS "Configuring static tests...")
+include(SetupStaticTests)
+
+create_static_test(StaticLanczosResamplerTest)
+add_static_test_check(StaticLanczosResamplerTest LanczosKernel4_pass.cpp TRUE)
+add_static_test_check(StaticLanczosResamplerTest LanczosKernel5_fail.cpp FALSE)
+
+create_static_test(StaticSOSFilterTest)
+add_static_test_check(StaticSOSFilterTest SOSFilterEven_pass.cpp TRUE)
+add_static_test_check(StaticSOSFilterTest SOSFilterOdd_fail.cpp FALSE)
+
+create_static_test(StaticBypassProcessorTest)
+add_static_test_check(StaticBypassProcessorTest BypassMismatchedLatencyTypes_fail.cpp FALSE)
+
+create_static_test(StaticSoftClipperTest)
+add_static_test_check(StaticSoftClipperTest SoftClipperBadOrder_fail.cpp FALSE)
+
+create_static_test(StaticModFilterTest)
+add_static_test_check(StaticModFilterTest ModFilterLowOrder_pass.cpp TRUE)
+add_static_test_check(StaticModFilterTest ModFilterHighOrder_fail.cpp FALSE)
+
+create_static_test(HasStaticMethodTest)
+add_static_test_check(HasStaticMethodTest HasStaticMethodTest_pass.cpp TRUE)
+
+create_static_test(HasMemberMethodTest)
+add_static_test_check(HasMemberMethodTest HasMemberMethodTest_pass.cpp TRUE)
+
+create_static_test(HasStaticMemberTest)
+add_static_test_check(HasStaticMemberTest HasStaticMemberTest_pass.cpp TRUE)
+
+create_static_test(IsContainerTest)
+add_static_test_check(IsContainerTest CorrectContainers_pass.cpp TRUE)
+
+create_static_test(ConstexprMathTest)
+add_static_test_check(ConstexprMathTest ConstexprMath_pass.cpp TRUE)

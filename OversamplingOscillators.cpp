@@ -19,22 +19,25 @@ namespace SawOS
   SawOSNext::~SawOSNext() {}
 
   // float SawBLNext::next(float freq, float *phase, int *counter, float p0n, float freqMul)
-  void SawOSNext::next(float freq, float phaseIn, float m_freqMul, float *osBuffer, int overSamplingRatio)
+  float SawOSNext::next(float freq, float phaseIn, float m_freqMul)
   {
     float phaseDiff = (phaseIn - m_lastPhase);
     m_lastPhase = phaseIn;
 
-    for (int k = 0; k < overSamplingRatio; k++)
-    {
-      m_phase += (phaseDiff/overSamplingRatio);
-      m_phase += freq * m_freqMul / (float)overSamplingRatio;
+      m_phase += (phaseDiff);
+      m_phase += freq * m_freqMul;
       if (m_phase >= 4.f)
         m_phase -= 8.f;
       else if (m_phase <= -4.f)
         m_phase += 8.f;
+      
+      // if (m_phase >= 4.f)
+      //   m_phase = -4.f;
+      // else if (m_phase <= -4.f)
+      //   m_phase = 4.f;
+
       float out = sc_wrap(m_phase, -1.f, 1.f);
-      osBuffer[k] = out;
-    }
+      return out;
   }
 
   SawOS::SawOS()
@@ -62,7 +65,8 @@ namespace SawOS
     for (int i = 0; i < nSamples; ++i)
     {
       float out;
-      saw.next(freq[i], phase[i], m_freqMul, osBuffer, oversample.getOversamplingRatio());
+      for(int k = 0; k<oversample.getOversamplingRatio(); k++)
+        osBuffer[k] = saw.next(freq[i], phase[i], m_freqMul/oversample.getOversamplingRatio());
       if (m_oversamplingIndex != 0)
         out = oversample.downsample();
       else
@@ -95,15 +99,20 @@ namespace SinOscOS
   SinOSNext::SinOSNext() {}
 
   SinOSNext::SinOSNext(float startPhase) {
-    m_lastPhase = startPhase;
-    m_phase = startPhase;
+    //m_lastPhase = startPhase;
+    //m_phase = startPhase;
   }
 
-  void SinOSNext::next(float freq, float phase, float m_freqMul, float *osBuffer, int overSamplingRatio)
+  float SinOSNext::next(float freq, float phase, float m_freqMul)
   {
-    saw.next(freq, phase, m_freqMul, osBuffer, overSamplingRatio);
-    for (int i2 = 0; i2 < overSamplingRatio; i2++)
-      osBuffer[i2] = sinTable.lookup((osBuffer[i2]+1.f)*2048.f);
+    float out = saw.next(freq, phase, m_freqMul); //saw returns a value between -1 and 1
+    m_val = sin((out+1)*pi);
+    return m_val;
+    //return sinTable.lookup((out+1.f)*2048.f);
+    // for(int k = 0; k<overSamplingRatio; k++)
+    //     osBuffer[k] = saw.next(freq, phase, m_freqMul/overSamplingRatio);
+    // for (int i2 = 0; i2 < overSamplingRatio; i2++)
+    //   osBuffer[i2] = sinTable.lookup((osBuffer[i2]+1.f)*2048.f);
   }
 
   SinOSNext::~SinOSNext() {}
@@ -134,8 +143,9 @@ namespace SinOscOS
     for (int i = 0; i < nSamples; ++i)
     {
       float out;
-
-      sine.next(freq[i], phase[i], m_freqMul, osBuffer, oversample.getOversamplingRatio());
+      for(int k = 0; k<oversample.getOversamplingRatio(); k++)
+        osBuffer[k] = sine.next(freq[i], phase[i], m_freqMul/oversample.getOversamplingRatio());
+      
       if (m_oversamplingIndex != 0)
         out = oversample.downsample();
       else
@@ -176,10 +186,11 @@ namespace PMOscOS
     for (int i = 0; i < nSamples; ++i)
     {
       float out;
-
-      sine0.next(modFreq[i], pm_phase[i], m_freqMul, osBuffer, oversample.getOversamplingRatio());
-      sine1.next(carFreq[i], , m_freqMul, osBuffer, oversample.getOversamplingRatio())
-
+      float mod;
+      for(int k = 0; k<oversample.getOversamplingRatio(); k++){
+        mod = sine0.next(modFreq[i], pm_phase[i], m_freqMul/oversample.getOversamplingRatio());
+        osBuffer[k] = sine1.next(carFreq[i], mod*pm_mul[i], m_freqMul/oversample.getOversamplingRatio());
+      }
       if (m_oversamplingIndex != 0)
         out = oversample.downsample();
       else
@@ -188,6 +199,148 @@ namespace PMOscOS
     }
   }
 }
+
+namespace FM7OS
+{
+  FM7OS::FM7OS()
+  {
+    sample_rate = (float)sampleRate();
+    Print("%f ", sample_rate);
+    for(int i = 0; i<6; i++)
+      oversamples[i].reset(sample_rate);
+    
+    m_oversamplingIndex = sc_clip(m_oversamplingIndex, 0, 4);
+
+    for(int i = 0; i<6; i++)
+      oversamples[i].setOversamplingIndex(m_oversamplingIndex);
+    
+    m_oversampleRatio = oversamples[0].getOversamplingRatio();
+    m_freqMul = m_freqMul/(float)m_oversampleRatio;
+
+    for(int k = 0; k<6; k++)
+      osBuffers[k] = oversamples[k].getOSBuffer();
+
+    //Print("%f ", m_freqMul);
+
+    mCalcFunc = make_calc_function<FM7OS, &FM7OS::next_aa>();
+    next_aa(1);
+  }
+  FM7OS::~FM7OS() {}
+
+  void FM7OS::next_aa(int nSamples)
+  {
+    const float *freqs[6] = {in(ctl0), in(ctl3), in(ctl6), in(ctl9), in(ctl12), in(ctl15)};
+    const float *amps[6] = {in(ctl2), in(ctl5), in(ctl8), in(ctl11), in(ctl14), in(ctl17)};
+
+    const float *mods[6][6] = {{in(modNum0), in(modNum1),in(modNum2),in(modNum3),in(modNum4),in(modNum5)},
+    {in(modNum6),in(modNum7),in(modNum8),in(modNum9),in(modNum10),in(modNum11)},
+    {in(modNum12),in(modNum13),in(modNum14),in(modNum15),in(modNum16),in(modNum17)},
+    {in(modNum18),in(modNum19),in(modNum20),in(modNum21),in(modNum22),in(modNum23)},
+    {in(modNum24),in(modNum25),in(modNum26),in(modNum27),in(modNum28),in(modNum29)},
+    {in(modNum30),in(modNum31),in(modNum32),in(modNum33),in(modNum34),in(modNum35)}};
+
+    float *outs[6] = {out(Out1),out(Out2),out(Out3),out(Out4),out(Out5),out(Out6)};
+
+    float freqs2[6];
+
+    for (int i = 0; i < nSamples; ++i)
+    {
+      
+      float outSamps[6] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+      for(int k = 0; k<m_oversampleRatio; k++){
+        for (int sineNum = 0; sineNum < 6; sineNum++){
+          freqs2[sineNum] = freqs[sineNum][i];
+          for (int m = 0; m < 6; m++)
+            freqs2[sineNum] = freqs2[sineNum] + (sines[m].m_val*mods[sineNum][m][i]);
+          osBuffers[sineNum][k] = sines[sineNum].next(freqs2[sineNum], m_phases[sineNum], m_freqMul);//m_phases[sineNum]
+        }
+
+      }
+
+      // for (int sineNum = 0; sineNum < 6; sineNum++)
+      //   Print("%f ", freqs2[sineNum]);
+      // Print("\n");
+
+      for (int k = 0; k<6; k++){
+        if (m_oversamplingIndex != 0)
+          outSamps[k] = oversamples[k].downsample();
+        else
+          outSamps[k] = osBuffers[k][0];
+        outs[k][i] = outSamps[k];
+      }
+        
+    }
+  }
+}
+
+namespace PM7OS
+{
+  PM7OS::PM7OS()
+  {
+    sample_rate = sampleRate();
+    for(int i = 0; i<6; i++)
+      oversamples[i].reset(sample_rate);
+    
+    m_oversamplingIndex = sc_clip(m_oversamplingIndex, 0, 4);
+
+    for(int i = 0; i<6; i++)
+      oversamples[i].setOversamplingIndex(m_oversamplingIndex);
+    
+    m_oversampleRatio = oversamples[0].getOversamplingRatio();
+
+    m_freqMul = m_freqMul/(float)m_oversampleRatio;
+
+    for(int k = 0; k<6; k++)
+      osBuffers[k] = oversamples[k].getOSBuffer();
+
+    
+
+    mCalcFunc = make_calc_function<PM7OS, &PM7OS::next_aa>();
+    next_aa(1);
+  }
+  PM7OS::~PM7OS() {}
+
+  void PM7OS::next_aa(int nSamples)
+  {
+    const float *freqs[6] = {in(ctl0), in(ctl3), in(ctl6), in(ctl9), in(ctl12), in(ctl15)};
+    const float *amps[6] = {in(ctl2), in(ctl5), in(ctl8), in(ctl11), in(ctl14), in(ctl17)};
+
+    const float *mods[6][6] = {{in(modNum0), in(modNum1),in(modNum2),in(modNum3),in(modNum4),in(modNum5)},
+    {in(modNum6),in(modNum7),in(modNum8),in(modNum9),in(modNum10),in(modNum11)},
+    {in(modNum12),in(modNum13),in(modNum14),in(modNum15),in(modNum16),in(modNum17)},
+    {in(modNum18),in(modNum19),in(modNum20),in(modNum21),in(modNum22),in(modNum23)},
+    {in(modNum24),in(modNum25),in(modNum26),in(modNum27),in(modNum28),in(modNum29)},
+    {in(modNum30),in(modNum31),in(modNum32),in(modNum33),in(modNum34),in(modNum35)}};
+
+    float *outs[6] = {out(Out1),out(Out2),out(Out3),out(Out4),out(Out5),out(Out6)};
+
+    for (int i = 0; i < nSamples; ++i)
+    {
+      float outSamps[6] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+      for(int k = 0; k<m_oversampleRatio; k++){
+        
+        for (int sineNum = 0; sineNum < 6; sineNum++){
+          float phaseMod = 0.f;
+          for (int m = 0; m < 6; m++)
+            phaseMod = phaseMod + (sines[m].m_val*mods[sineNum][m][i]);
+          osBuffers[sineNum][k] = sines[sineNum].next(freqs[sineNum][i], m_phases[sineNum]+phaseMod, m_freqMul);
+        }
+      }
+
+      for (int k = 0; k<6; k++){
+
+        if (m_oversamplingIndex != 0)
+          outSamps[k] = oversamples[k].downsample();
+        else
+          outSamps[k] = osBuffers[k][0];
+
+        outs[k][i] = outSamps[k];
+      }
+        
+    }
+  }
+}
+
 
 namespace TriOS
 {
@@ -215,7 +368,8 @@ namespace TriOS
     for (int i = 0; i < nSamples; ++i)
     {
       float out;
-      saw.next(freq[i], phase[i], m_freqMul, osBuffer, oversample.getOversamplingRatio());
+      for(int k = 0; k<oversample.getOversamplingRatio(); k++)
+        osBuffer[k] = saw.next(freq[i], phase[i], m_freqMul/oversample.getOversamplingRatio());
       // make the saw a triangle
       for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
         osBuffer[i2] = abs(osBuffer[i2]) * 2 - 1;
@@ -255,7 +409,8 @@ namespace VarSawOS
     float inv1width = 2.f / (1 - width);
     float *osBuffer = oversample.getOSBuffer();
 
-    saw.next(freq, phase, m_freqMul, osBuffer, oversample.getOversamplingRatio());
+    for(int k = 0; k<oversample.getOversamplingRatio(); k++)
+        osBuffer[k] = saw.next(freq, phase, m_freqMul/oversample.getOversamplingRatio());
     for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
     {
       float temp = osBuffer[i2] / 2 + 0.5;
@@ -308,7 +463,8 @@ namespace SquareOS
     float inv1width = 2.f / (1 - width);
     float *osBuffer = oversample.getOSBuffer();
 
-    saw.next(freq, phase, m_freqMul, osBuffer, oversample.getOversamplingRatio());
+    for(int k = 0; k<oversample.getOversamplingRatio(); k++)
+        osBuffer[k] = saw.next(freq, phase, m_freqMul/oversample.getOversamplingRatio());
     for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
     {
       float temp = osBuffer[i2] / 2 + 0.5;
@@ -788,6 +944,10 @@ PluginLoad(SawOSUGens)
   registerUnit<TriOS::TriOS>(ft, "TriOS", false);
   registerUnit<VarSawOS::VarSawOS>(ft, "VarSawOS", false);
   registerUnit<SquareOS::SquareOS>(ft, "SquareOS", false);
+  registerUnit<PMOscOS::PMOscOS>(ft, "PMOscOS", false);
+  registerUnit<FM7OS::FM7OS>(ft, "FM7OS", false);
+  registerUnit<PM7OS::PM7OS>(ft, "PM7OS", false);
+  
   
   registerUnit<SawBL::SawBL>(ft, "SawBL", false);
   registerUnit<SquareBL::SquareBL>(ft, "SquareBL", false);
