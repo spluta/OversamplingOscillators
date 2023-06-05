@@ -399,7 +399,7 @@ namespace VarSawOS
     float inv1width = 2.f / (1 - width);
 
     for(int k = 0; k<oversample.getOversamplingRatio(); k++)
-        osBuffer[k] = saw.next(freq, phase, m_freqMul/oversample.getOversamplingRatio());
+        osBuffer[k] = saw.next(freq, phase-0.5, m_freqMul/oversample.getOversamplingRatio());
     for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
     {
       float temp = osBuffer[i2] / 2 + 0.5;
@@ -450,8 +450,6 @@ namespace SquareOS
   float SquareOS::next(float freq, float phase, float width)
   {
     float out;
-    float invwidth = 2.f / width;
-    float inv1width = 2.f / (1 - width);
 
     for(int k = 0; k<oversample.getOversamplingRatio(); k++)
         osBuffer[k] = saw.next(freq, phase, m_freqMul/oversample.getOversamplingRatio());

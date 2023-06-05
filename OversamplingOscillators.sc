@@ -419,6 +419,7 @@ SquareOS : UGen {
 	*ar { |freq=440, phase=0, width = 0.5, oversample=1, mul = 1, add = 0|
 		if(freq.rate!='audio'){freq = K2A.ar(freq)};
 		if(phase.rate!='audio'){phase = K2A.ar(phase)};
+		if(width.rate!='audio'){width = K2A.ar(width)};
 		^this.multiNew('audio', freq, phase, width, oversample).madd(mul, add);
 	}
 
@@ -444,6 +445,7 @@ TriOS : UGen {
 VarSawOS : UGen {
 	*ar { |freq=440, phase=0, width = 0.5, oversample=1, mul = 1, add = 0|
 		if(freq.rate!='audio'){freq = K2A.ar(freq)};
+		if(width.rate!='audio'){width = K2A.ar(width)};
 		if(phase.rate!='audio'){phase = K2A.ar(phase)};
 		^this.multiNew('audio', freq, phase, width, oversample).madd(mul, add);
 	}

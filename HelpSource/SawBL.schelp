@@ -4,7 +4,7 @@ categories:: UGens>Oscillator
 related:: TriBL, SquareBL, SawBL, SinOscOS, TriOS, SawOS, VarSawOS, PMOscOS, PM7OS, FM7OS
 
 DESCRIPTION::
-A Bandlimited Sawtooth wave oscillator based on Julius Smith's PolySaw oscillator in the Faust source.
+A Bandlimited Sawtooth wave oscillator based on Julius Smith's PolySaw oscillator in the Faust source. It expands on that algorithm by applying a 4th order polynomial transition to higher frequencies, a 2nd order polynomial to the lower frequencies, and uses a non-bandlimited sawtooth below 1hz.
 
 
 CLASSMETHODS::
