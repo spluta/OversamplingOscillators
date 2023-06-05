@@ -30,11 +30,6 @@ namespace SawOS
         m_phase -= 8.f;
       else if (m_phase <= -4.f)
         m_phase += 8.f;
-      
-      // if (m_phase >= 4.f)
-      //   m_phase = -4.f;
-      // else if (m_phase <= -4.f)
-      //   m_phase = 4.f;
 
       float out = sc_wrap(m_phase, -1.f, 1.f);
       return out;
@@ -47,6 +42,8 @@ namespace SawOS
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
+
+    osBuffer = oversample.getOSBuffer();
 
     mCalcFunc = make_calc_function<SawOS, &SawOS::next_aa>();
     next_aa(1);
@@ -61,7 +58,6 @@ namespace SawOS
     const float *phase = in(Phase);
     float *outbuf = out(Out1);
 
-    float *osBuffer = oversample.getOSBuffer();
     for (int i = 0; i < nSamples; ++i)
     {
       float out;
@@ -105,7 +101,7 @@ namespace SinOscOS
 
   float SinOSNext::next(float freq, float phase, float m_freqMul)
   {
-    float out = saw.next(freq, phase, m_freqMul); //saw returns a value between -1 and 1
+    float out = saw.next(freq, phase+m_phaseOffset, m_freqMul); //saw returns a value between -1 and 1
     m_val = sin((out+1)*pi);
     return m_val;
     //return sinTable.lookup((out+1.f)*2048.f);
@@ -126,6 +122,8 @@ namespace SinOscOS
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
+    osBuffer = oversample.getOSBuffer();
+
     mCalcFunc = make_calc_function<SinOscOS, &SinOscOS::next_aa>();
     next_aa(1);
   }
@@ -137,8 +135,6 @@ namespace SinOscOS
     const float *freq = in(Freq);
     const float *phase = in(Phase);
     float *outbuf = out(Out1);
-
-    float *osBuffer = oversample.getOSBuffer();
 
     for (int i = 0; i < nSamples; ++i)
     {
@@ -343,6 +339,8 @@ namespace TriOS
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
+    osBuffer = oversample.getOSBuffer();
+
     mCalcFunc = make_calc_function<TriOS, &TriOS::next_aa>();
 
   }
@@ -355,12 +353,11 @@ namespace TriOS
     const float *phase = in(Phase);
     float *outbuf = out(Out1);
 
-    float *osBuffer = oversample.getOSBuffer();
     for (int i = 0; i < nSamples; ++i)
     {
       float out;
       for(int k = 0; k<oversample.getOversamplingRatio(); k++)
-        osBuffer[k] = saw.next(freq[i], phase[i], m_freqMul/oversample.getOversamplingRatio());
+        osBuffer[k] = saw.next(freq[i], phase[i]+0.5, m_freqMul/oversample.getOversamplingRatio());
       // make the saw a triangle
       for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
         osBuffer[i2] = abs(osBuffer[i2]) * 2 - 1;
@@ -387,6 +384,8 @@ namespace VarSawOS
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
+    osBuffer = oversample.getOSBuffer();
+
     mCalcFunc = make_calc_function<VarSawOS, &VarSawOS::next_aa>();
     next_aa(1);
   }
@@ -398,7 +397,6 @@ namespace VarSawOS
     float out;
     float invwidth = 2.f / width;
     float inv1width = 2.f / (1 - width);
-    float *osBuffer = oversample.getOSBuffer();
 
     for(int k = 0; k<oversample.getOversamplingRatio(); k++)
         osBuffer[k] = saw.next(freq, phase, m_freqMul/oversample.getOversamplingRatio());
@@ -441,6 +439,8 @@ namespace SquareOS
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
+    osBuffer = oversample.getOSBuffer();
+
     mCalcFunc = make_calc_function<SquareOS, &SquareOS::next_aa>();
     next_aa(1);
   }
@@ -452,7 +452,6 @@ namespace SquareOS
     float out;
     float invwidth = 2.f / width;
     float inv1width = 2.f / (1 - width);
-    float *osBuffer = oversample.getOSBuffer();
 
     for(int k = 0; k<oversample.getOversamplingRatio(); k++)
         osBuffer[k] = saw.next(freq, phase, m_freqMul/oversample.getOversamplingRatio());
@@ -515,6 +514,11 @@ namespace SawBL
       *phase -= 2.f;
     else if (*phase <= -1.f)
       *phase += 2.f;
+    
+    // if (*phase >= 1.f)
+    //   Print("%f \n", *phase);
+    // else if (*phase <= -1.f)
+    //   Print("%f \n", *phase);
 
     float poly4 = *phase * *phase * (*phase * *phase - 2.0);
     poly4 = diff4_1.diff(poly4, p0n);
@@ -547,6 +551,11 @@ namespace SawBL
 
     if (freq < 1.f)
       out = *phase;
+    
+    if (out>1.f)
+      out = 1.f;
+    else if (out<(-1.f))
+      out = (-1.f);
 
     return out;
   }
@@ -600,61 +609,61 @@ namespace SawBL
   }
 }
 
-namespace SawH {
+// namespace SawH {
 
-  SawH::SawH()
-  {
-    m_counter = 0;
+//   SawH::SawH()
+//   {
+//     m_counter = 0;
 
-    oversample.reset(sampleRate());
-    oversample.setOversamplingIndex(2);
+//     oversample.reset(sampleRate());
+//     oversample.setOversamplingIndex(2);
 
-    if (inRate(0) == 2)
-      mCalcFunc = make_calc_function<SawH, &SawH::next_a>();
-    else
-      mCalcFunc = make_calc_function<SawH, &SawH::next_k>();
-    next_a(1);
-  }
+//     if (inRate(0) == 2)
+//       mCalcFunc = make_calc_function<SawH, &SawH::next_a>();
+//     else
+//       mCalcFunc = make_calc_function<SawH, &SawH::next_k>();
+//     next_a(1);
+//   }
 
-  SawH::~SawH() {}
+//   SawH::~SawH() {}
 
-  void SawH::next_a(int nSamples)
-  {
-    const float *freqIn = in(Freq);
-    float *outbuf = out(Out1);
+//   void SawH::next_a(int nSamples)
+//   {
+//     const float *freqIn = in(Freq);
+//     float *outbuf = out(Out1);
 
-    oversample.setOversamplingIndex(2);
+//     oversample.setOversamplingIndex(2);
 
-    float *osBuffer = oversample.getOSBuffer();
+//     float *osBuffer = oversample.getOSBuffer();
 
-    for (int i = 0; i < nSamples; ++i)
-    {
-      float freq = abs(freqIn[i])/(float)oversample.getOversamplingRatio();
-      float p0n = sampleRate() / (freq);
-      for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
-        osBuffer[i2] = saw.next(freq, &m_phase, &m_counter, p0n, m_freqMul);
+//     for (int i = 0; i < nSamples; ++i)
+//     {
+//       float freq = abs(freqIn[i])/(float)oversample.getOversamplingRatio();
+//       float p0n = sampleRate() / (freq);
+//       for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
+//         osBuffer[i2] = saw.next(freq, &m_phase, &m_counter, p0n, m_freqMul);
 
-      outbuf[i] = oversample.downsample();
-    }
-  }
+//       outbuf[i] = oversample.downsample();
+//     }
+//   }
 
-  void SawH::next_k(int nSamples)
-  {
-    SlopeSignal<float> slopedFreq = makeSlope(abs(in0(Freq)), m_freq);
-    float *outbuf = out(Out1);
+//   void SawH::next_k(int nSamples)
+//   {
+//     SlopeSignal<float> slopedFreq = makeSlope(abs(in0(Freq)), m_freq);
+//     float *outbuf = out(Out1);
 
-    float *osBuffer = oversample.getOSBuffer();
+//     float *osBuffer = oversample.getOSBuffer();
 
-    for (int i = 0; i < nSamples; ++i)
-    {
-      float freq = slopedFreq.consume()/(float)oversample.getOversamplingRatio();
-      float p0n = sampleRate() / (freq);
-      for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
-        osBuffer[i2] = saw.next(freq, &m_phase, &m_counter, p0n, m_freqMul);
-      outbuf[i] = oversample.downsample();
-    }
-  }
-}
+//     for (int i = 0; i < nSamples; ++i)
+//     {
+//       float freq = slopedFreq.consume()/(float)oversample.getOversamplingRatio();
+//       float p0n = sampleRate() / (freq);
+//       for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
+//         osBuffer[i2] = saw.next(freq, &m_phase, &m_counter, p0n, m_freqMul);
+//       outbuf[i] = oversample.downsample();
+//     }
+//   }
+// }
 
 namespace SquareBL
 {
@@ -675,8 +684,6 @@ namespace SquareBL
     float sawval = saw.next(freq, &m_phase, &m_counter, p0n, m_freqMul);
 
     delArray[delArrayCounter] = sawval;
-
-    // diffdel(x,del) = x-x@int(del)*(1-ma.frac(del))-x@(int(del)+1)*ma.frac(del);
 
     float dec = del - (long)del;
     float delaySig = (delArray[sc_wrap(delArrayCounter - (int)del, 0, delMax)] * (1 - dec)) +
@@ -832,11 +839,6 @@ namespace TriBL
 
     for (int i = 0; i < nSamples; ++i)
     {
-      // float freq = freqIn[i];
-      // float gain = 4*freq/sampleRate();
-      // float out = square.next(freq, duty)+m_delay1*0.999;
-      // outbuf[i] = out*gain;
-      // m_delay1 = out;
       outbuf[i] = next(freqIn[i], duty);
     }
   }
@@ -927,7 +929,8 @@ namespace ImpulseBL
 
 }
 
-PluginLoad(SawOSUGens)
+
+PluginLoad(OversamplingOscillators)
 {
   ft = inTable;
   registerUnit<SawOS::SawOS>(ft, "SawOS", false);
@@ -936,6 +939,7 @@ PluginLoad(SawOSUGens)
   registerUnit<VarSawOS::VarSawOS>(ft, "VarSawOS", false);
   registerUnit<SquareOS::SquareOS>(ft, "SquareOS", false);
   registerUnit<PMOscOS::PMOscOS>(ft, "PMOscOS", false);
+
   registerUnit<FM7OS::FM7OS>(ft, "FM7OS", false);
   registerUnit<PM7OS::PM7OS>(ft, "PM7OS", false);
   
@@ -944,6 +948,4 @@ PluginLoad(SawOSUGens)
   registerUnit<SquareBL::SquareBL>(ft, "SquareBL", false);
   registerUnit<TriBL::TriBL>(ft, "TriBL", false);
   registerUnit<ImpulseBL::ImpulseBL>(ft, "ImpulseBL", false);
-
-  registerUnit<SawH::SawH>(ft, "SawH", false);
 }

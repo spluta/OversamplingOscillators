@@ -1,17 +1,16 @@
 OversamplingOscillators
 Sam Pluta
 
-uses the VariableOversampling class from Jatin Chowdhury's ChowDSP library in the ported plugins library by Mads Kjeldgaard
+uses the VariableOversampling class from Jatin Chowdhury's ChowDSP library. that source is included with the download.
 
-to set this up to edit in .vscode, edit the c_cpp_properties.json (in .vscode hidded folder) to correctly point to these files on your system
 
 run the following from this directory to build from source using cmake
 
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DSC_PATH=<PATH TO SC SOURCE> -DPORTED_PATH=<PATH TO PORTED PLUGINS SOURCE>
+cmake .. -DCMAKE_BUILD_TYPE=Release -DSC_PATH=<PATH TO SC SOURCE> 
 cmake --build . --config Release
 
-It should build SawOS, VarSawOS, and SawPn. The OS plugins are Oversampled. The Pn plugins are polynomial bandlimited.
+It should build TriBL, SquareBL, SawBL, SinOscOS, TriOS, SawOS, VarSawOS, PMOscOS, PM7OS, FM7OS. The OS plugins are Oversampled. The BL plugins are polynomial bandlimited.
 
-Make sure these two files and OversamplingOscillators.sc are in the SC path, recompile the SC libary, and they should work.# OversamplingOscillators
+After building ake sure this directory or all of the scx, sc, and schelp files are in the SC path, recompile the SC libary, and they should work. #OversamplingOscillators

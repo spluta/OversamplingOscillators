@@ -399,10 +399,10 @@ PM7OS : MultiOutUGen {
 			++ oversample
 		).madd(mul,add)
 	}
-	*arAlgo { | algo=0, ctlMatrix, feedback=0.0 |
+	*arAlgo { | algo=0, ctlMatrix, feedback=0.0, oversample=4 |
 		var modMatrix, channels;
 		#modMatrix, channels = this.algoSpec(algo, feedback);
-		^this.ar(ctlMatrix, modMatrix).slice(channels)
+		^this.ar(ctlMatrix, modMatrix, oversample).slice(channels)
 	}
 
 	init { | ... args |
@@ -456,6 +456,7 @@ VarSawOS : UGen {
 
 SawBL : UGen {
 	*ar { |freq=440, iphase=0, mul=1, add=0|
+		if(freq.rate!='audio'){freq = K2A.ar(freq)};
 		^this.multiNew('audio', freq, iphase).madd(mul,add);
 	}
 
@@ -467,6 +468,8 @@ SawBL : UGen {
 
 SquareBL : UGen {
 	*ar { |freq=440, phase=0, width=0.5, mul=1, add=0|
+		if(freq.rate!='audio'){freq = K2A.ar(freq)};
+		if(width.rate!='audio'){width = K2A.ar(width)};
 		^this.multiNew('audio', freq, phase, width).madd(mul,add);
 	}
 
@@ -478,6 +481,8 @@ SquareBL : UGen {
 
 TriBL : UGen {
 	*ar { |freq=440, phase=0, width=0.5, mul=1, add=0|
+		if(freq.rate!='audio'){freq = K2A.ar(freq)};
+		if(width.rate!='audio'){width = K2A.ar(width)};
 		^this.multiNew('audio', freq, phase, width).madd(mul,add);
 	}
 
@@ -489,18 +494,8 @@ TriBL : UGen {
 
 ImpulseBL : UGen {
 	*ar { |freq=440, mul=1, add=0|
+		if(freq.rate!='audio'){freq = K2A.ar(freq)};
 		^this.multiNew('audio', freq).madd(mul,add);
-	}
-
-	checkInputs {
-		/* TODO */
-		^this.checkValidInputs;
-	}
-}
-
-SawH : UGen {
-	*ar { |freq=440, phase=0, mul=1, add=0|
-		^this.multiNew('audio', freq, phase).madd(mul,add);
 	}
 
 	checkInputs {

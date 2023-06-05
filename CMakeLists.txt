@@ -4,8 +4,6 @@ project (OversamplingOscillators)
 include_directories(${SC_PATH}/include/plugin_interface)
 include_directories(${SC_PATH}/include/common)
 include_directories(${SC_PATH}/external_libraries/libsndfile/)
-#include_directories(${PORTED_PATH}/plugins/)
-#include_directories(${PORTED_PATH}/plugins/ChowDSP)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -27,5 +25,3 @@ add_library(SawBL MODULE OversamplingOscillators.cpp)
 add_library(SquareBL MODULE OversamplingOscillators.cpp)
 add_library(ImpulseBL MODULE OversamplingOscillators.cpp)
 add_library(TriBL MODULE OversamplingOscillators.cpp)
-
-add_library(SawH MODULE OversamplingOscillators.cpp)

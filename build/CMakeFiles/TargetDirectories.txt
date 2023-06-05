@@ -1,0 +1,14 @@
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/SawOS.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/SinOscOS.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/TriOS.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/VarSawOS.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/SquareOS.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/PMOscOS.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/FM7OS.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/PM7OS.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/SawBL.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/SquareBL.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/ImpulseBL.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/TriBL.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/edit_cache.dir
+/Users/spluta1/Library/Application Support/SuperCollider/Extensions/MyPlugins/OversamplingOscillators/build/CMakeFiles/rebuild_cache.dir

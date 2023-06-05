@@ -34,6 +34,8 @@ private:
   enum InputParams { Freq, Phase, OverSample, NumInputParams };
   enum Outputs { Out1, NumOutputParams };
 
+  float *osBuffer;
+
   float m_freq_past{0.f};
   float i_phase{in0(Phase)};
   float m_freqMul{2.0f/(float)sampleRate()};
@@ -64,7 +66,8 @@ namespace SinOscOS {
       SawOS::SawOSNext saw;
       SinTable sinTable;
 
-      float m_lastPhase;
+      //float m_lastPhase;
+      const float m_phaseOffset{-1.f};
   };
 
 class SinOscOS : public SCUnit {
@@ -82,6 +85,8 @@ class SinOscOS : public SCUnit {
 
     enum InputParams { Freq, Phase, OverSample, NumInputParams };
     enum Outputs { Out1, NumOutputParams };
+
+    float *osBuffer;
 
     float sample_rate;
     float m_freqMul{2.0f/(float)sampleRate()};
@@ -197,6 +202,8 @@ private:
   enum InputParams { Freq, Phase, OverSample, NumInputParams };
   enum Outputs { Out1, NumOutputParams };
 
+  float *osBuffer;
+
   float m_freq_past{0.f};
   float m_freqMul{2.0f/(float)sampleRate()};
   int m_oversamplingIndex{0};
@@ -222,6 +229,8 @@ private:
 
   enum InputParams { Freq, Phase, Width, OverSample, NumInputParams };
   enum Outputs { Out1, NumOutputParams };
+
+  float *osBuffer;
 
   float m_freq_past{in0(Freq)};
   float m_phase{(float)in0(Phase)};
@@ -253,6 +262,8 @@ private:
 
   enum InputParams { Freq, Phase, Width, OverSample, NumInputParams };
   enum Outputs { Out1, NumOutputParams };
+
+  float *osBuffer;
 
   float m_freq_past{in0(Freq)};
   float m_phase{(float)in0(Phase)};
@@ -306,6 +317,8 @@ private:
 
   enum InputParams { Freq, Phase, OverSample, NumInputParams };
   enum Outputs { Out1, NumOutputParams };
+
+  float *osBuffer;
 
   float m_freq{abs(in0(Freq))};
   float m_phase{in0(Phase)};
@@ -478,3 +491,4 @@ private:
   SawBL::SawBLNext saw;
 };
 }
+
