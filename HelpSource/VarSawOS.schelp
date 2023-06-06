@@ -1,10 +1,10 @@
 TITLE:: VarSawOS
-summary:: Oversampled Squarewave Oscillator
+summary:: Oversampled Variable Sawtooth Oscillator
 categories:: UGens>Oscillator
-related:: TriBL, SquareBL, SawBL, SinOscOS, SquareOS, SawOS, VarSawOS, PMOscOS, PM7OS, FM7OS
+related:: SawBL, SquareBL, TriBL, ImpulseBL, SinOscOS, TriOS, SawOS, SquareOS, VarSawOS, PMOscOS, PM7OS, FM7OS
 
 DESCRIPTION::
-An oversampled Squarewave oscillator using Jatin Chowdhurry's oversampling library from ChowDSP
+An oversampled variable saw oscillator using Jatin Chowdhurry's oversampling library from ChowDSP. Allows for wave shapes between saw up, triangle, saw down, and everything in between.
 
 
 CLASSMETHODS::

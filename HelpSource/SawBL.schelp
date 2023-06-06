@@ -1,7 +1,7 @@
 TITLE:: SawBL
 summary:: Polynomial Bandlimited Sawtooth
 categories:: UGens>Oscillator
-related:: TriBL, SquareBL, SawBL, SinOscOS, TriOS, SawOS, VarSawOS, PMOscOS, PM7OS, FM7OS
+related:: SawBL, SquareBL, TriBL, ImpulseBL, SinOscOS, TriOS, SawOS, SquareOS, VarSawOS, PMOscOS, PM7OS, FM7OS
 
 DESCRIPTION::
 A Bandlimited Sawtooth wave oscillator based on Julius Smith's PolySaw oscillator in the Faust source. It expands on that algorithm by applying a 4th order polynomial transition to higher frequencies, a 2nd order polynomial to the lower frequencies, and uses a non-bandlimited sawtooth below 1hz.
@@ -34,13 +34,13 @@ code::
 {SawBL.ar(100, 0.5)}.plot(5/s.sampleRate);
 
 //Frequency modulation is possible
-({SawBL.ar(K2A.ar(MouseX.kr(200,4000))+
-	(SawBL.ar(K2A.ar(MouseY.kr(200,4000)))*3000))*0.2
+({SawBL.ar(MouseX.kr(200,4000)+
+	(LFSaw.ar(MouseY.kr(200,4000))*3000)).dup*0.2
 }.play)
 
 //SawOS, the oversampled Saw, might be preferable
-({SawOS.ar(K2A.ar(MouseX.kr(200,4000))+
-	(LFSaw.ar(K2A.ar(MouseY.kr(200,4000)))*3000), 0, 4)*0.2
+({SawOS.ar(MouseX.kr(200,4000)+
+	(LFSaw.ar(MouseY.kr(200,4000))*3000), 0, 4).dup*0.2
 }.play)
 
 //Extreme Modulation is possible.

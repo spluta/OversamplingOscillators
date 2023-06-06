@@ -1,9 +1,12 @@
 class:: PM7OS
 summary:: Oversampled phase modulation oscillator matrix.
-categories:: UGens>Generators>Deterministic
+categories:: UGens>Oscillator
+related:: SawBL, SquareBL, TriBL, ImpulseBL, SinOscOS, TriOS, SawOS, SquareOS, VarSawOS, PMOscOS, PM7OS, FM7OS
 
 Description::
 PM7OS implements a 6x6 oscillator matrix, where each oscillator's phase can be modulated by any of the other oscillators' output. This is the same circuit as Stefan Kersten's classic FM7, but now with oversampling to encourage extreme settings. This UGen is overly luxurious and not at all efficient as all inputs are audio rate at all times.
+
+While fully functional, some outcomes are different from FM7, so I would say this is still a work in progress.
 
 classmethods::
 
@@ -132,7 +135,7 @@ code::
 (
 // Courtesy Fredrik Olofsson (2008)
 Routine.run{
-    var syn, time = 3; // Allow each patch to run for 16sec / 8bars
+    var syn, time = 3; // Allow each patch to run for 3 secs
     inf.do{|i|
         ("// FM7 patch"+i).post;
         syn= ("
@@ -143,7 +146,7 @@ Routine.run{
                 var ctls= x.collect{|a| a.collect{|b| LFSaw.ar(*b)}};
                 var mods= y.collect{|a| a.collect{|b| LFPulse.kr(*b)}};
                 var chans= #[0, 1];
-                PM7OS.ar(ctls, mods/(1pi), 1).poll.slice(chans)*0.8;
+                PM7OS.ar(ctls, mods/(1pi), 1).slice(chans)*0.8;
             }.play)").postln.interpret;
         time.wait;
         syn.free;
@@ -165,7 +168,7 @@ Routine.run{
         [2, 0, 1]
     ];
     mods = [
-        [10, 4500, 400, 100, 0, 1000],
+        [0, 4500, 400, 100, 0, 1000],
         [LFNoise2.ar(0.3).range(0,2000), 0, 0, LFPulse.ar(MouseX.kr(1,50)).range(0,1)*300, 0, 0],
         [SinOsc.ar(1,0,0.5,1), 0, 0, 0, 0, 0],
         [0, 0, (TRand.ar(0,1000,Dust.kr(5))), 0, 150, 0],

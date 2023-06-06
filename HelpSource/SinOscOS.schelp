@@ -1,10 +1,10 @@
 TITLE:: SinOscOS
-summary:: Oversampled Triangle Oscillator
+summary:: Oversampled Sine Wave Oscillator
 categories:: UGens>Oscillator
-related:: TriBL, SquareBL, SawBL, SinOscOS, SawOS, TriOS, VarTriOS, SquareOS, PMOscOS, PM7OS, FM7OS
+related:: SawBL, SquareBL, TriBL, ImpulseBL, SinOscOS, TriOS, SawOS, SquareOS, VarSawOS, PMOscOS, PM7OS, FM7OS
 
 DESCRIPTION::
-An oversampled Triangle oscillator using Jatin Chowdhurry's oversampling library from ChowDSP
+An oversampled Sine Wave oscillator using Jatin Chowdhurry's oversampling library from ChowDSP
 
 
 CLASSMETHODS::

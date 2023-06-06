@@ -1,10 +1,10 @@
 TITLE:: PMOscOS
-summary:: Oversampled Triangle Oscillator
+summary:: Oversampled Phase Modulation Oscillator Pair
 categories:: UGens>Oscillator
-related:: TriBL, SquareBL, SawBL, SinOscOS, SawOS, TriOS, VarTriOS, SquareOS, PMOscOS, PM7OS, FM7OS
+related:: SawBL, SquareBL, TriBL, ImpulseBL, SinOscOS, TriOS, SawOS, SquareOS, VarSawOS, PMOscOS, PM7OS, FM7OS
 
 DESCRIPTION::
-An oversampled Triangle oscillator using Jatin Chowdhurry's oversampling library from ChowDSP
+An oversampled Phase Modulation Oscillator Pair using Jatin Chowdhurry's oversampling library from ChowDSP. Expands upon the PMOsc by allowing phase modulation of the modulating oscillator.
 
 
 CLASSMETHODS::

@@ -344,7 +344,6 @@ public:
 private:
   // Calc function
   void next_a(int nSamples);
-  void next_k(int nSamples);
 
   enum InputParams { Freq, Phase, NumInputParams };
   enum Outputs { Out1, NumOutputParams };
@@ -385,7 +384,9 @@ class SquareNext {
     float m_sampleRate{96000.f};
     float m_phase{0.f};
     float m_freqMul{2.0f/m_sampleRate};
-    float m_fmin{96000.f/float(2*delMax)};
+    float m_fmin{96000.f/float(2*delMax)}; //2*delMax
+    float m_fmin2{96000.f/float(delMax)};
+    float m_fmin4{96000.f/float(delMax/2)};
     
 };
 
@@ -400,9 +401,6 @@ public:
 private:
   // Calc function
   void next_aa(int nSamples);
-  void next_ak(int nSamples);
-  void next_ka(int nSamples);
-  void next_kk(int nSamples);
 
   //float diff(float x, int num);
 

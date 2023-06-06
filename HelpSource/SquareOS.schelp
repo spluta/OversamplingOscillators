@@ -1,7 +1,7 @@
 TITLE:: SquareOS
 summary:: Oversampled Squarewave Oscillator
 categories:: UGens>Oscillator
-related:: TriBL, SquareBL, SawBL, SinOscOS, SquareOS, SawOS, VarSawOS, PMOscOS, PM7OS, FM7OS
+related:: SawBL, SquareBL, TriBL, ImpulseBL, SinOscOS, TriOS, SawOS, SquareOS, VarSawOS, PMOscOS, PM7OS, FM7OS
 
 DESCRIPTION::
 An oversampled Squarewave oscillator using Jatin Chowdhurry's oversampling library from ChowDSP
@@ -55,8 +55,8 @@ code::
 {SquareOS.ar(200, 0, SinOsc.ar(8).range(0,1), 2, 0.1)}.scope;
 
 //Frequency modulation is possible
-({SquareOS.ar(K2A.ar(MouseX.kr(200,4000))+
-	(LFTri.ar(K2A.ar(MouseY.kr(200,4000)))*3000), 0, SinOsc.ar(8).range(0.1,0.9), 4, 0.2).dup
+({SquareOS.ar(MouseX.kr(200,4000)+
+	(LFTri.ar(MouseY.kr(200,4000))*3000), 0, SinOsc.ar(8).range(0.1,0.9), 4, 0.2).dup
 }.play)
 
 

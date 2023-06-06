@@ -1,7 +1,7 @@
 TITLE:: SawOS
 summary:: Oversampled Sawtooth Oscillator
 categories:: UGens>Oscillator
-related:: TriBL, SquareBL, SawBL, SinOscOS, TriOS, SawOS, VarSawOS, PMOscOS, PM7OS, FM7OS
+related:: SawBL, SquareBL, TriBL, ImpulseBL, SinOscOS, TriOS, SawOS, SquareOS, VarSawOS, PMOscOS, PM7OS, FM7OS
 
 DESCRIPTION::
 An oversampled Sawtooth oscillator using Jatin Chowdhurry's oversampling library from ChowDSP
@@ -42,7 +42,7 @@ code::
 {SawOS.ar(400, -0.5)}.plot;
 {SawOS.ar(400, 1)}.plot;
 
-//phase modulation works, even though it doesn't make sense
+//phase modulation works
 {SawOS.ar(0, LFSaw.ar(400))}.plot;
 
 {SawOS.ar(200, SinOsc.ar(400)*Line.ar(0,2,10), 3, 0.1)}.scope;

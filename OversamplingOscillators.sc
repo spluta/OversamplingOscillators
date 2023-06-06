@@ -482,7 +482,8 @@ SquareBL : UGen {
 }
 
 TriBL : UGen {
-	*ar { |freq=440, phase=0, width=0.5, mul=1, add=0|
+	*ar { |freq=440, phase=0, mul=1, add=0|
+		var width = 0.5;
 		if(freq.rate!='audio'){freq = K2A.ar(freq)};
 		if(width.rate!='audio'){width = K2A.ar(width)};
 		^this.multiNew('audio', freq, phase, width).madd(mul,add);

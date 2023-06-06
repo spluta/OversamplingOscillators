@@ -238,14 +238,19 @@ namespace FM7OS
 
     for (int i = 0; i < nSamples; ++i)
     {
-      //Print("%i %i ", m_oversampleRatio, m_oversamplingIndex);
       float outSamps[6] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
       for(int k = 0; k<m_oversampleRatio; k++){
         for (int sineNum = 0; sineNum < 6; sineNum++){
           freqs2[sineNum] = freqs[sineNum][i];
+          float phaseMod = 0.f;
           for (int m = 0; m < 6; m++)
-            freqs2[sineNum] = freqs2[sineNum] + (sines[m].m_val*mods[sineNum][m][i]);
-          osBuffers[sineNum][k] = sines[sineNum].next(freqs2[sineNum], m_phases[sineNum], m_freqMul);//m_phases[sineNum]
+          {
+            if(m!=sineNum)
+              freqs2[sineNum] = freqs2[sineNum] + (sines[m].m_val*mods[sineNum][m][i]);
+            else
+              phaseMod = sines[m].m_val*mods[sineNum][m][i];
+          }
+          osBuffers[sineNum][k] = sines[sineNum].next(freqs2[sineNum], m_phases[sineNum]+phaseMod, m_freqMul);//m_phases[sineNum]
         }
 
       }
@@ -563,10 +568,8 @@ namespace SawBL
 
     m_counter = 0;
 
-    if (inRate(0) == 2)
-      mCalcFunc = make_calc_function<SawBL, &SawBL::next_a>();
-    else
-      mCalcFunc = make_calc_function<SawBL, &SawBL::next_k>();
+
+    mCalcFunc = make_calc_function<SawBL, &SawBL::next_a>();
     next_a(1);
   }
 
@@ -588,80 +591,7 @@ namespace SawBL
     }
   }
 
-  void SawBL::next_k(int nSamples)
-  {
-
-    SlopeSignal<float> slopedFreq = makeSlope(abs(in0(Freq)), m_freq);
-    float *outbuf = out(Out1);
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      float freq = slopedFreq.consume();
-
-      float p0n = sampleRate() / freq;
-      float out = saw.next(freq, &m_phase, &m_counter, p0n, m_freqMul);
-
-      outbuf[i] = out;
-    }
-    m_freq = slopedFreq.value;
-  }
 }
-
-// namespace SawH {
-
-//   SawH::SawH()
-//   {
-//     m_counter = 0;
-
-//     oversample.reset(sampleRate());
-//     oversample.setOversamplingIndex(2);
-
-//     if (inRate(0) == 2)
-//       mCalcFunc = make_calc_function<SawH, &SawH::next_a>();
-//     else
-//       mCalcFunc = make_calc_function<SawH, &SawH::next_k>();
-//     next_a(1);
-//   }
-
-//   SawH::~SawH() {}
-
-//   void SawH::next_a(int nSamples)
-//   {
-//     const float *freqIn = in(Freq);
-//     float *outbuf = out(Out1);
-
-//     oversample.setOversamplingIndex(2);
-
-//     float *osBuffer = oversample.getOSBuffer();
-
-//     for (int i = 0; i < nSamples; ++i)
-//     {
-//       float freq = abs(freqIn[i])/(float)oversample.getOversamplingRatio();
-//       float p0n = sampleRate() / (freq);
-//       for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
-//         osBuffer[i2] = saw.next(freq, &m_phase, &m_counter, p0n, m_freqMul);
-
-//       outbuf[i] = oversample.downsample();
-//     }
-//   }
-
-//   void SawH::next_k(int nSamples)
-//   {
-//     SlopeSignal<float> slopedFreq = makeSlope(abs(in0(Freq)), m_freq);
-//     float *outbuf = out(Out1);
-
-//     float *osBuffer = oversample.getOSBuffer();
-
-//     for (int i = 0; i < nSamples; ++i)
-//     {
-//       float freq = slopedFreq.consume()/(float)oversample.getOversamplingRatio();
-//       float p0n = sampleRate() / (freq);
-//       for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
-//         osBuffer[i2] = saw.next(freq, &m_phase, &m_counter, p0n, m_freqMul);
-//       outbuf[i] = oversample.downsample();
-//     }
-//   }
-// }
 
 namespace SquareBL
 {
@@ -674,6 +604,7 @@ namespace SquareBL
 
   float SquareNext::next(float freq, float duty)
   {
+    //freq = sc_clip(abs(freq), m_fmin*4, m_sampleRate/2);
     freq = abs(freq);
     float p0n = m_sampleRate / freq;
     float ddel = duty * p0n;
@@ -687,20 +618,27 @@ namespace SquareBL
     float delaySig = (delArray[sc_wrap(delArrayCounter - (int)del, 0, delMax)] * (1 - dec)) +
                      (delArray[sc_wrap(delArrayCounter - ((int)del + 1), 0, delMax)] * dec);
 
-    float out = sawval - delaySig;
+    float out = (sawval - delaySig);
 
     delArrayCounter++;
     if (delArrayCounter >= (delMax + 1))
       delArrayCounter = 0;
 
-    float lf_square = sawval + (0.5f - duty) * 2;
+    float lf_square = m_phase + ((0.5f - duty)*2.f);
     if (lf_square >= 0)
       lf_square = 1.f;
     else
       lf_square = -1.f;
+    lf_square -= ((0.5f - duty)*2.f);
 
-    if (freq < m_fmin)
-      out = lf_square - ((0.5f - duty) * 2.f);
+    if (freq < (m_fmin4)){
+      if (freq<m_fmin2)
+        out = lf_square;
+      else{
+        float mul = (freq-m_fmin2)/(m_fmin4-m_fmin2);
+        out = (out*mul)+(lf_square*(1-mul));
+      } 
+    }
 
     return out; // returns the signal before offset correction because TriBL needs the offset signal
   }
@@ -716,16 +654,8 @@ namespace SquareBL
   SquareBL::SquareBL()
   {
     square.setRatePhase(sampleRate(), m_phase);
+    mCalcFunc = make_calc_function<SquareBL, &SquareBL::next_aa>();
 
-    if (inRate(0) == 2)
-      if (inRate(2) == 2)
-        mCalcFunc = make_calc_function<SquareBL, &SquareBL::next_aa>();
-      else
-        mCalcFunc = make_calc_function<SquareBL, &SquareBL::next_ak>();
-    else if (inRate(2) == 2)
-      mCalcFunc = make_calc_function<SquareBL, &SquareBL::next_ka>();
-    else
-      mCalcFunc = make_calc_function<SquareBL, &SquareBL::next_kk>();
     next_aa(1);
   }
 
@@ -743,46 +673,6 @@ namespace SquareBL
       outbuf[i] = square.next(freqIn[i], duty) + ((0.5f - duty) * 2.f);
     }
   }
-  void SquareBL::next_ak(int nSamples)
-  {
-    const float *freqIn = in(Freq);
-    const float duty = in0(Width);
-    float *outbuf = out(Out1);
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = square.next(freqIn[i], duty) + ((0.5f - duty) * 2.f);
-    }
-  }
-  void SquareBL::next_ka(int nSamples)
-  {
-
-    const float *dutyIn = in(Width);
-    float *outbuf = out(Out1);
-
-    SlopeSignal<float> freq = makeSlope(in0(Freq), m_freq);
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      float duty = dutyIn[i];
-      outbuf[i] = square.next(freq.consume(), duty) + ((0.5f - duty) * 2.f);
-    }
-    m_freq = freq.value;
-  }
-  void SquareBL::next_kk(int nSamples)
-  {
-
-    SlopeSignal<float> freq = makeSlope(in0(Freq), m_freq);
-
-    const float duty = in0(Width);
-    float *outbuf = out(Out1);
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = square.next(freq.consume(), duty) + ((0.5f - duty) * 2.f);
-    }
-    m_freq = freq.value;
-  }
 }
 
 namespace TriBL
@@ -792,15 +682,8 @@ namespace TriBL
   {
     square.setRatePhase(sampleRate(), m_phase);
 
-    if (inRate(0) == 2)
-      if (inRate(2) == 2)
-        mCalcFunc = make_calc_function<TriBL, &TriBL::next_aa>();
-      else
-        mCalcFunc = make_calc_function<TriBL, &TriBL::next_ak>();
-    else if (inRate(2) == 2)
-      mCalcFunc = make_calc_function<TriBL, &TriBL::next_ka>();
-    else
-      mCalcFunc = make_calc_function<TriBL, &TriBL::next_kk>();
+    mCalcFunc = make_calc_function<TriBL, &TriBL::next_aa>();
+
     next_aa(1);
   }
 
@@ -829,44 +712,6 @@ namespace TriBL
     }
   }
 
-  void TriBL::next_ak(int nSamples)
-  {
-    const float *freqIn = in(Freq);
-    const float duty = in0(Width);
-    float *outbuf = out(Out1);
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = next(freqIn[i], duty);
-    }
-  }
-  void TriBL::next_ka(int nSamples)
-  {
-
-    const float *dutyIn = in(Width);
-    float *outbuf = out(Out1);
-    SlopeSignal<float> freq = makeSlope(in0(Freq), m_freq);
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = next(freq.consume(), dutyIn[i]);
-    }
-    m_freq = freq.value;
-  }
-  void TriBL::next_kk(int nSamples)
-  {
-    const float duty = in0(Width);
-
-    SlopeSignal<float> freq = makeSlope(in0(Freq), m_freq);
-
-    float *outbuf = out(Out1);
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = next(freq.consume(), duty);
-    }
-    m_freq = freq.value;
-  }
 }
 
 namespace ImpulseBL
