@@ -43,13 +43,13 @@ jobs:
       if: matrix.os != 'windows-latest'
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: cmake --build . --config "Release" --target install
+      run: cmake --build . --config "Release"
 
     - name: Build (Windows)
       working-directory: ${{github.workspace}}\build
       if: matrix.os == 'windows-latest'
       shell: pwsh
-      run: cmake --build . --config "Release" --target install
+      run: cmake --build . --config "Release"
 
       # Gather all files in a zip
     - name: Zip up build (Unix)
