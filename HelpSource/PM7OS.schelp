@@ -177,23 +177,23 @@ Routine.run{
     var ctls, mods, chans;
     ctls = [
         // freq, phase, amp
-        [MouseX.kr(2, 1000), 0, 1],
-        [MouseY.kr(2, 1000), 0, 1],
-        [2140, 0, 1],
+        [MouseX.kr(2, 2000), 0, LFPulse.ar(LFNoise2.ar(1).range(10,100)).lag(0.01)],
+        [MouseY.kr(2, 2000), 0, LFPulse.ar(LFNoise2.ar(1).range(10,100)).lag(0.01)],
+        [LFNoise2.ar(100).range(800,1000), 0, 1],
         [300+SinOsc.ar(301,0,1000), 0, 1],
         [10, 0, 1],
-        [2, 0, 1]
+        [LFNoise0.ar(20).range(300,1000), 0, 1]
     ];
     mods = [
-        [0, 4500, 400, 100, 0, 1000],
-        [LFNoise2.ar(0.3).range(0,2000), 0, 0, LFPulse.ar(MouseX.kr(1,50)).range(0,1)*300, 0, 0],
-        [SinOsc.ar(1,0,0.5,1), 0, 0, 0, 0, 0],
-        [0, 0, (TRand.ar(0,1000,Dust.kr(5))), 0, 150, 0],
-        [(TRand.ar(0,1000,Dust.kr(5)))*LFPulse.ar(MouseY.kr(1,10)), 0, 0, 0, 0, 0],
-        [0, 100, 0, 0, 0, 0]
+        [0.1, 0, LFNoise2.ar(0.3).range(0.1,0.5), 0, 0, 0],
+        [LFNoise2.ar(0.34).range(0,1), 0, 0, 0, 0, 0],
+        [0, 0, 0, 0.02, 0, 1],
+        [0, 0, 0, 0, WhiteNoise.ar(1), 0],
+        [0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0]
     ];
     chans = [0,1];
-    FM7OS.ar(ctls, mods*2, 1).slice(chans) * 0.3;
+    PM7OS.ar(ctls, mods*2, 4).slice(chans) * 0.3;
 }.scope;
 )
 ::

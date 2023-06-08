@@ -375,7 +375,7 @@ PM7OS : MultiOutUGen {
 					[5, 5, feedback],
 				),  [0, 1, 2, 3, 4, 5]
 			]},
-		].at(algo).value/pi  //key is that it is divided by pi
+		].at(algo).value*[1/pi, 1]  //key is that it is divided by pi
 	}
 
 	*ar { | ctlMatrix, modMatrix, oversample=4, mul=1, add=0 |
