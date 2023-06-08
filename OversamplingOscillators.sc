@@ -375,7 +375,7 @@ PM7OS : MultiOutUGen {
 					[5, 5, feedback],
 				),  [0, 1, 2, 3, 4, 5]
 			]},
-		].at(algo).value/pi
+		].at(algo).value/pi  //key is that it is divided by pi
 	}
 
 	*ar { | ctlMatrix, modMatrix, oversample=4, mul=1, add=0 |
@@ -399,10 +399,11 @@ PM7OS : MultiOutUGen {
 			++ oversample
 		).madd(mul,add)
 	}
+
 	*arAlgo { | algo=0, ctlMatrix, feedback=0.0, oversample=4 |
 		var modMatrix, channels;
 		#modMatrix, channels = this.algoSpec(algo, feedback);
-		^this.ar(ctlMatrix, modMatrix, oversample).slice(channels)
+		^this.ar(ctlMatrix, modMatrix.postln, oversample).slice(channels)
 	}
 
 	init { | ... args |

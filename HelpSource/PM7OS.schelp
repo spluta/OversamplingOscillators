@@ -99,6 +99,23 @@ code::
 
 )
 
+//pretty close to the original
+(
+{
+	var ctls = [
+		// freq, phase, amp
+		[LFNoise1.kr(0.5).range(300, 310), 0, 1],
+		[LFNoise1.kr(0.5).exprange(3, 310), 0, 1],
+		[LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
+		[LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
+		[LFNoise1.kr(0.5).exprange(3, 100), 0, 1],
+		[LFNoise1.kr(0.5).exprange(3, 100), 0, 1]
+	];
+	FM7.arAlgo(1, ctls, MouseX.kr(0, 2), 4)*0.2
+}.play
+
+)
+
 
 ::
 

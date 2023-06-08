@@ -246,11 +246,11 @@ namespace FM7OS
           for (int m = 0; m < 6; m++)
           {
             if(m!=sineNum)
-              freqs2[sineNum] = freqs2[sineNum] + (sines[m].m_val*mods[sineNum][m][i]);
+              freqs2[sineNum] = freqs2[sineNum] + (sines[m].m_val*mods[sineNum][m][i]*amps[m][i]);
             else
               phaseMod = sines[m].m_val*mods[sineNum][m][i];
           }
-          osBuffers[sineNum][k] = sines[sineNum].next(freqs2[sineNum], m_phases[sineNum]+phaseMod, m_freqMul);//m_phases[sineNum]
+          osBuffers[sineNum][k] = sines[sineNum].next(freqs2[sineNum], m_phases[sineNum]+phaseMod, m_freqMul)*amps[sineNum][i];//m_phases[sineNum]
         }
 
       }
@@ -314,8 +314,8 @@ namespace PM7OS
         for (int sineNum = 0; sineNum < 6; sineNum++){
           float phaseMod = 0.f;
           for (int m = 0; m < 6; m++)
-            phaseMod = phaseMod + (sines[m].m_val*mods[sineNum][m][i]);
-          osBuffers[sineNum][k] = sines[sineNum].next(freqs[sineNum][i], m_phases[sineNum]+phaseMod, m_freqMul);
+            phaseMod = phaseMod + (sines[m].m_val*mods[sineNum][m][i]*amps[m][i]);
+          osBuffers[sineNum][k] = sines[sineNum].next(freqs[sineNum][i], m_phases[sineNum]+phaseMod, m_freqMul)*amps[sineNum][i];
         }
       }
 
