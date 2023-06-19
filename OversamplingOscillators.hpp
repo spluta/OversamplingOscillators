@@ -154,6 +154,75 @@ class FM7OS : public SCUnit {
   };
 } //namespace FM7OS
 
+namespace FM7bOS {
+
+class FM7bOS : public SCUnit {
+  public:
+    FM7bOS();
+    ~FM7bOS();
+
+   SawOS::SawOSNext saws[6];
+
+    VariableOversampling<> oversamples[6];
+    float *osBuffers[6];
+
+  private:
+    // Calc function
+    void next_aa(int nSamples);
+
+    enum InputParams { ctl0, ctl1, ctl2, ctl3, ctl4, ctl5, ctl6, ctl7, ctl8, ctl9, ctl10, ctl11, ctl12, ctl13, ctl14, ctl15, ctl16, ctl17, 
+    modNum0, modNum1, modNum2, modNum3, modNum4, modNum5, modNum6, modNum7, modNum8, modNum9, modNum10, modNum11, modNum12, modNum13, modNum14, modNum15, modNum16, modNum17, modNum18, modNum19, modNum20, modNum21, modNum22, modNum23, modNum24, modNum25, modNum26, modNum27, modNum28, modNum29, modNum30, modNum31, modNum32, modNum33, modNum34, modNum35,
+    //oscType0, oscType1, oscType2, oscType3, oscType4, oscType15,
+    OverSample, NumInputParams };
+    enum Outputs { Out1, Out2, Out3, Out4, Out5, Out6, NumOutputParams };
+
+    float sample_rate{(float)sampleRate()};
+    
+    float m_phases[6] = {in0(ctl1),in0(ctl4),in0(ctl7),in0(ctl0),in0(ctl3),in0(ctl6)};
+
+    float m_vals[6];
+
+    float m_freqMul{2.0f/(float)sampleRate()};
+    int m_oversamplingIndex{sc_clip((int)in0(OverSample), 0, 4)};
+    int m_oversampleRatio{(int)pow(2, m_oversamplingIndex)};
+  };
+} //namespace FM7bOS
+
+
+namespace FM7aOS {
+
+class FM7aOS : public SCUnit {
+  public:
+    FM7aOS();
+    ~FM7aOS();
+
+   SawOS::SawOSNext saws[6];
+
+    VariableOversampling<> oversamples[6];
+    float *osBuffers[6];
+
+  private:
+    // Calc function
+    void next_aa(int nSamples);
+
+    enum InputParams { ctl0, ctl1, ctl2, ctl3, ctl4, ctl5, ctl6, ctl7, ctl8, ctl9, ctl10, ctl11, ctl12, ctl13, ctl14, ctl15, ctl16, ctl17, 
+    modNum0, modNum1, modNum2, modNum3, modNum4, modNum5, modNum6, modNum7, modNum8, modNum9, modNum10, modNum11, modNum12, modNum13, modNum14, modNum15, modNum16, modNum17, modNum18, modNum19, modNum20, modNum21, modNum22, modNum23, modNum24, modNum25, modNum26, modNum27, modNum28, modNum29, modNum30, modNum31, modNum32, modNum33, modNum34, modNum35,
+    //oscType0, oscType1, oscType2, oscType3, oscType4, oscType15,
+    OverSample, NumInputParams };
+    enum Outputs { Out1, Out2, Out3, Out4, Out5, Out6, NumOutputParams };
+
+    float sample_rate{(float)sampleRate()};
+    
+    float m_phases[6] = {in0(ctl1),in0(ctl4),in0(ctl7),in0(ctl0),in0(ctl3),in0(ctl6)};
+
+    float m_vals[6];
+
+    float m_freqMul{2.0f/(float)sampleRate()};
+    int m_oversamplingIndex{sc_clip((int)in0(OverSample), 0, 4)};
+    int m_oversampleRatio{(int)pow(2, m_oversamplingIndex)};
+  };
+} //namespace FM7aOS
+
 namespace PM7OS {
 class PM7OS : public SCUnit {
   public:

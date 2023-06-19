@@ -177,8 +177,8 @@ Routine.run{
     var ctls, mods, chans;
     ctls = [
         // freq, phase, amp
-        [MouseX.kr(2, 2000), 0, LFPulse.ar(LFNoise2.ar(1).range(10,100)).lag(0.01)],
-        [MouseY.kr(2, 2000), 0, LFPulse.ar(LFNoise2.ar(1).range(10,100)).lag(0.01)],
+        [MouseX.kr(2, 2000), 0, LFPulse.ar(LFNoise2.ar(1).range(10,100)).lag(0.02)],
+        [MouseY.kr(2, 2000), 0, LFPulse.ar(LFNoise2.ar(1).range(10,100)).lag(0.02)],
         [LFNoise2.ar(100).range(800,1000), 0, 1],
         [300+SinOsc.ar(301,0,1000), 0, 1],
         [10, 0, 1],

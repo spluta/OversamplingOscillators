@@ -53,8 +53,6 @@ FM7OS : MultiOutUGen  {
 			if(item.rate!='audio'){item = K2A.ar(item)};
 			item
 		};
-		ctlMatrix.postln;
-		modMatrix.postln;
 		^this.multiNewList(
 			['audio']
 			++ ctlMatrix
@@ -68,8 +66,74 @@ FM7OS : MultiOutUGen  {
 		^this.initOutputs(this.class.numOperators, rate)
 	}
 	checkInputs {
-		/*^if (inputs.size != this.class.numRequiredInputs) {
-		this.class.numRequiredInputs.asString + "inputs required (" ++ inputs.size ++ ")"*/
+		^this.checkValidInputs;
+	}
+}
+
+FM7aOS : MultiOutUGen  {
+	*numOperators { ^6 }
+	*ar { | ctlMatrix, modMatrix, synthTypes, oversample=4, mul=1, add=0 |
+		ctlMatrix = (ctlMatrix ?? { this.controlMatrix })
+		.collect{|item|
+			if(item[0].rate!='audio'){item[0] = K2A.ar(item[0])};
+			if(item[2].rate!='audio'){item[2] = K2A.ar(item[2])};
+			item
+		}.flatten(1);
+		modMatrix = (modMatrix ?? { this.modMatrix });
+		synthTypes.do{|type,i| modMatrix[i][i] = type};
+		modMatrix.postln;
+		modMatrix = modMatrix.flatten(1)
+		.collect{|item|
+			if(item.rate!='audio'){item = K2A.ar(item)};
+			item
+		};
+		^this.multiNewList(
+			['audio']
+			++ ctlMatrix
+			++ modMatrix
+			++ oversample
+		).madd(mul,add)
+	}
+
+	init { | ... args |
+		inputs = args;
+		^this.initOutputs(this.class.numOperators, rate)
+	}
+	checkInputs {
+		^this.checkValidInputs;
+	}
+}
+
+FM7bOS : MultiOutUGen  {
+	*numOperators { ^6 }
+	*ar { | ctlMatrix, modMatrix, synthTypes, oversample=4, mul=1, add=0 |
+		ctlMatrix = (ctlMatrix ?? { this.controlMatrix })
+		.collect{|item|
+			if(item[0].rate!='audio'){item[0] = K2A.ar(item[0])};
+			if(item[2].rate!='audio'){item[2] = K2A.ar(item[2])};
+			item
+		}.flatten(1);
+		modMatrix = (modMatrix ?? { this.modMatrix });
+		synthTypes.do{|type,i| modMatrix[i][i] = type};
+		modMatrix.postln;
+		modMatrix = modMatrix.flatten(1)
+		.collect{|item|
+			if(item.rate!='audio'){item = K2A.ar(item)};
+			item
+		};
+		^this.multiNewList(
+			['audio']
+			++ ctlMatrix
+			++ modMatrix
+			++ oversample
+		).madd(mul,add)
+	}
+
+	init { | ... args |
+		inputs = args;
+		^this.initOutputs(this.class.numOperators, rate)
+	}
+	checkInputs {
 		^this.checkValidInputs;
 	}
 }
@@ -94,7 +158,6 @@ PM7OS : MultiOutUGen {
 		args.do { | x |
 			matrix[x[0]][x[1]] = x[2];
 		};
-		matrix.postln;
 		^matrix
 	}
 
@@ -390,8 +453,6 @@ PM7OS : MultiOutUGen {
 			if(item.rate!='audio'){item = K2A.ar(item)};
 			item
 		};
-		ctlMatrix.postln;
-		modMatrix.postln;
 		^this.multiNewList(
 			['audio']
 			++ ctlMatrix
@@ -403,7 +464,7 @@ PM7OS : MultiOutUGen {
 	*arAlgo { | algo=0, ctlMatrix, feedback=0.0, oversample=4 |
 		var modMatrix, channels;
 		#modMatrix, channels = this.algoSpec(algo, feedback);
-		^this.ar(ctlMatrix, modMatrix.postln, oversample).slice(channels)
+		^this.ar(ctlMatrix, modMatrix, oversample).slice(channels)
 	}
 
 	init { | ... args |
