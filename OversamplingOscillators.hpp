@@ -362,7 +362,7 @@ class SawBLNext {
   public:
     SawBLNext();
     ~SawBLNext();
-    float next(float freq, float* phase, int* counter, double sampleRate, float freqMul);
+    float next(float freq, float* phase, int* counter, float p0n, float freqMul);
 
   private:
 
@@ -391,6 +391,7 @@ private:
   float m_freq{abs(in0(Freq))};
   float m_phase{in0(Phase)};
   float m_freqMul{2.0f/(float)sampleRate()};
+  float m_sampleRate {(float)sampleRate()};
 
   int m_counter{0};
 
@@ -402,33 +403,6 @@ private:
 } // namespace SawBL
 
 
-namespace SawH {
-
-class SawH : public SCUnit {
-public:
-  SawH();
-  ~SawH();
-
-private:
-  // Calc function
-  void next_a(int nSamples);
-
-  enum InputParams { Freq, Phase, NumInputParams };
-  enum Outputs { Out1, NumOutputParams };
-
-  float m_freq{abs(in0(Freq))};
-  float m_phase{in0(Phase)};
-  float m_freqMul{2.0f/(float)sampleRate()};
-
-  int m_counter{0};
-
-  float diffArray [3] = {m_phase, m_phase, m_phase};
-
-  SawBL::SawBLNext saw;
-  VariableOversampling<> oversample;
-};
-
-} // namespace SawH
 
 namespace SquareBL {
 
@@ -549,6 +523,7 @@ private:
   int m_counter{0};
   float m_phase{1.f};
   float freqMul{2.0f/(float)sampleRate()};
+  float m_sampleRate{(float)sampleRate()};
 
   float m_delay1 = {0.f};
 

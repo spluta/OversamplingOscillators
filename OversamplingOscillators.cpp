@@ -709,7 +709,7 @@ namespace SawBL
 
   // this code is adapted from Julius Smith's implementation in Faust
 
-  float SawBLNext::next(float freq, float *phase, int *counter, double p0n, float freqMul)
+  float SawBLNext::next(float freq, float *phase, int *counter, float p0n, float freqMul)
   {
     *phase += freq * freqMul;
     if (*phase >= 1.f)
@@ -775,7 +775,7 @@ namespace SawBL
     for (int i = 0; i < nSamples; ++i)
     {
       float freq = abs(freqIn[i]);
-      float p0n = sampleRate() / freq;
+      float p0n = m_sampleRate / freq;
       float out = saw.next(freq, &m_phase, &m_counter, p0n, m_freqMul);
 
       outbuf[i] = out;
@@ -795,7 +795,6 @@ namespace SquareBL
 
   float SquareNext::next(float freq, float duty)
   {
-    // freq = sc_clip(abs(freq), m_fmin*4, m_sampleRate/2);
     freq = abs(freq);
     float p0n = m_sampleRate / freq;
     float ddel = duty * p0n;
@@ -846,7 +845,7 @@ namespace SquareBL
 
   SquareBL::SquareBL()
   {
-    square.setRatePhase(sampleRate(), m_phase);
+    square.setRatePhase(m_sampleRate, m_phase);
     mCalcFunc = make_calc_function<SquareBL, &SquareBL::next_aa>();
 
     next_aa(1);
@@ -873,7 +872,7 @@ namespace TriBL
 
   TriBL::TriBL()
   {
-    square.setRatePhase(sampleRate(), m_phase);
+    square.setRatePhase(m_sampleRate, m_phase);
 
     mCalcFunc = make_calc_function<TriBL, &TriBL::next_aa>();
 
@@ -885,7 +884,7 @@ namespace TriBL
   float TriBL::next(float freq, float duty)
   {
     freq = abs(freq);
-    float gain = 4 * freq / sampleRate();
+    float gain = 4 * freq / m_sampleRate;
     duty = sc_clip(duty, 0.f, 1.f);
     float out = (square.next(freq, duty) + m_delay1 * 0.999);
     m_delay1 = out;
@@ -924,10 +923,7 @@ namespace ImpulseBL
   ImpulseBL::ImpulseBL()
   {
 
-    if (inRate(0) == 2)
-      mCalcFunc = make_calc_function<ImpulseBL, &ImpulseBL::next_a>();
-    else
-      mCalcFunc = make_calc_function<ImpulseBL, &ImpulseBL::next_k>();
+    mCalcFunc = make_calc_function<ImpulseBL, &ImpulseBL::next_a>();
 
     next_a(1);
   }
@@ -942,22 +938,8 @@ namespace ImpulseBL
     for (int i = 0; i < nSamples; ++i)
     {
       float freq = abs(freqIn[i]);
-      float p0n = sampleRate() / freq;
+      float p0n = m_sampleRate / freq;
       float z = saw.next(freqIn[i], &m_phase, &m_counter, p0n, freqMul);
-      outbuf[i] = impulse.next() + (m_delay1 - z);
-      m_delay1 = z;
-    }
-  }
-
-  void ImpulseBL::next_k(int nSamples)
-  {
-    const float freq = abs(in0(Freq));
-    float *outbuf = out(Out1);
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      float p0n = sampleRate() / freq;
-      float z = saw.next(freq, &m_phase, &m_counter, p0n, freqMul);
       outbuf[i] = impulse.next() + (m_delay1 - z);
       m_delay1 = z;
     }
