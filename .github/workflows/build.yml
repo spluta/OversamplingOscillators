@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-20.04, windows-latest]
+        os: [macos-latest, ubuntu-20.04] #, windows-latest]
 
     steps:
     - uses: actions/checkout@v3
@@ -34,7 +34,7 @@ jobs:
 
     - name: Get SC source code
       run: git clone https://github.com/supercollider/supercollider.git ${{github.workspace}}/supercollider           
-      
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
@@ -43,6 +43,14 @@ jobs:
     - name: Build
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} 
+
+      # Gather all files in a zip
+    - name: Zip up build (Unix)
+      if: matrix.os != 'windows-latest'
+      shell: bash
+      working-directory: ${{github.workspace}}/build
+      run: zip -r OversamplingOscillators-${{runner.os}} install/OversamplingOscillators
+
 
 
 
