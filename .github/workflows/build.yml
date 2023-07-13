@@ -3,6 +3,10 @@ on:
     tags:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
 jobs:
   build:
 
@@ -12,12 +16,7 @@ jobs:
         os: [macos-latest, ubuntu-18.04, windows-latest]
 
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: Install 7Zip (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: powershell
-      run: Install-Module 7Zip4PowerShell -Force -Verbose
+    - uses: actions/checkout@v3
 
     - name: Get SC source code
       run: git clone https://github.com/supercollider/supercollider.git ${{github.workspace}}/supercollider
@@ -25,7 +24,7 @@ jobs:
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
       # We'll use this as our working directory for all subsequent commands
-      run: cmake -E make_directory ${{github.workspace}}/build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
     - name: Configure CMake (Unix)
       shell: bash
@@ -50,46 +49,3 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: cmake --build . --config "Release"
-
-      # Gather all files in a zip
-    - name: Zip up build (Unix)
-      if: matrix.os != 'windows-latest'
-      shell: bash
-      working-directory: ${{github.workspace}}/build
-      run: zip -r OversampledOscillators-${{runner.os}} OversampledOscillators
-      
-      # Gather all files in a zip
-    - name: Zip up build (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      working-directory: ${{github.workspace}}\build
-      run: Compress-7Zip "OversampledOscillators" -ArchiveFileName "OversampledOscillators-${{runner.os}}.zip" -Format Zip
-      
-    - name: Check if release has been created
-      uses: mukunku/tag-exists-action@v1.0.0
-      id: checkTag
-      with: 
-        tag: 'v1'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    # Publish build
-    - name: Create Release
-      if: steps.checkTag.outputs.exists == false
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: OversampledOscillators-${{ github.ref }}
-        draft: false
-        prerelease: false
-          
-    - name: Upload binaries to release
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ${{github.workspace}}/build/OversampledOscillators-${{runner.os}}.zip
-        asset_name: OversampledOscillators-${{runner.os}}.zip
-        tag: ${{ github.ref }}
