@@ -327,7 +327,7 @@ namespace FM7bOS
 
     for (int i = 0; i < numOsc; i++)
     {
-      freqs[i] = in(i);
+      freqs[i] =in(i);
       outs[i] = out(i);
       for (int j = 0; j < numOsc; j++)
         mods[i][j] = in(numOsc + j + (i * numOsc));
@@ -888,7 +888,7 @@ namespace TriBL
     duty = sc_clip(duty, 0.f, 1.f);
     float out = (square.next(freq, duty) + m_delay1 * 0.999);
     m_delay1 = out;
-    float gain2 = pow(abs(0.5f - duty) * 2, 5) * 4 + 1;
+    float gain2 = pow(abs(0.5f - duty) * 2., 5.) * 4 + 1;
     return out * gain * gain2;
   }
 

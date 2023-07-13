@@ -23,14 +23,18 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: assign compiler
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1.4.1
+
     - name: Install 7Zip (Windows)
       if: runner.os == 'Windows'
       shell: powershell
       run: Install-Module 7Zip4PowerShell -Force -Verbose
 
     - name: Get SC source code
-      run: git clone https://github.com/supercollider/supercollider.git ${{github.workspace}}/supercollider
-
+      run: git clone https://github.com/supercollider/supercollider.git ${{github.workspace}}/supercollider           
+      
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
