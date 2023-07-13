@@ -37,7 +37,7 @@ namespace SawOS
 
   SawOS::SawOS()
   {
-    const float samplerate = sampleRate();
+    const double samplerate = sampleRate();
 
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
@@ -540,7 +540,7 @@ namespace TriOS
 {
   TriOS::TriOS()
   {
-    const float samplerate = sampleRate();
+    const double samplerate = sampleRate();
 
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
@@ -583,7 +583,7 @@ namespace VarSawOS
 
   VarSawOS::VarSawOS()
   {
-    const float samplerate = sampleRate();
+    const double samplerate = sampleRate();
 
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
@@ -638,7 +638,7 @@ namespace SquareOS
 
   SquareOS::SquareOS()
   {
-    const float samplerate = sampleRate();
+    const double samplerate = sampleRate();
 
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
@@ -660,7 +660,7 @@ namespace SquareOS
       osBuffer[k] = saw.next(freq, phase, m_freqMul / oversample.getOversamplingRatio());
     for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
     {
-      float temp = osBuffer[i2] / 2 + 0.5;
+      float temp = osBuffer[i2] / 2.f + 0.5f;
       osBuffer[i2] = temp < width ? -1.f : 1.f;
     }
     if (m_oversamplingIndex != 0)
@@ -709,7 +709,7 @@ namespace SawBL
 
   // this code is adapted from Julius Smith's implementation in Faust
 
-  float SawBLNext::next(float freq, float *phase, int *counter, float p0n, float freqMul)
+  float SawBLNext::next(float freq, float *phase, int *counter, double p0n, float freqMul)
   {
     *phase += freq * freqMul;
     if (*phase >= 1.f)
@@ -717,7 +717,7 @@ namespace SawBL
     else if (*phase <= -1.f)
       *phase += 2.f;
 
-    float poly4 = *phase * *phase * (*phase * *phase - 2.0);
+    float poly4 = *phase * *phase * (*phase * *phase - 2.0f);
     poly4 = diff4_1.diff(poly4, p0n);
     poly4 = diff4_2.diff(poly4, p0n);
     poly4 = diff4_3.diff(poly4, p0n) / 24.f;

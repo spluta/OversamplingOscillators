@@ -88,7 +88,7 @@ class SinOscOS : public SCUnit {
 
     float *osBuffer;
 
-    float sample_rate;
+    double sample_rate;
     float m_freqMul{2.0f/(float)sampleRate()};
     int m_oversamplingIndex{(int)in0(OverSample)};
   };
@@ -116,7 +116,7 @@ class PMOscOS : public SCUnit {
     enum InputParams { CarFreq, ModFreq, PMMul, PMModPhase, OverSample, NumInputParams };
     enum Outputs { Out1, NumOutputParams };
 
-    float sample_rate{(float)sampleRate()};
+    double sample_rate{(float)sampleRate()};
     float m_modphase{in0(PMModPhase)};
     float m_freqMul{2.0f/(float)sampleRate()};
     int m_oversamplingIndex{(int)in0(OverSample)};
@@ -144,7 +144,7 @@ class FM7OS : public SCUnit {
     OverSample, NumInputParams };
     enum Outputs { Out1, Out2, Out3, Out4, Out5, Out6, NumOutputParams };
 
-    float sample_rate{(float)sampleRate()};
+    double sample_rate{(float)sampleRate()};
     
     float m_phases[6] = {in0(ctl1),in0(ctl4),in0(ctl7),in0(ctl0),in0(ctl3),in0(ctl6)};
 
@@ -177,7 +177,7 @@ class FM7aOS : public SCUnit {
     // OverSample, NumInputParams };
     // enum Outputs { Out1, Out2, Out3, Out4, Out5, Out6, NumOutputParams };
 
-    float sample_rate{(float)sampleRate()};
+    double sample_rate{(float)sampleRate()};
     
     float m_phases[4] = {0.f, 0.f,0.f, 0.f};
 
@@ -207,13 +207,7 @@ class FM7bOS : public SCUnit {
     // Calc function
     void next_aa(int nSamples);
 
-    // enum InputParams { ctl0, ctl1, ctl2, ctl3, ctl4, ctl5, ctl6, ctl7, ctl8, ctl9, ctl10, ctl11, ctl12, ctl13, ctl14, ctl15, ctl16, ctl17, 
-    // modNum0, modNum1, modNum2, modNum3, modNum4, modNum5, modNum6, modNum7, modNum8, modNum9, modNum10, modNum11, modNum12, modNum13, modNum14, modNum15, modNum16, modNum17, modNum18, modNum19, modNum20, modNum21, modNum22, modNum23, modNum24, modNum25, modNum26, modNum27, modNum28, modNum29, modNum30, modNum31, modNum32, modNum33, modNum34, modNum35,
-    // //oscType0, oscType1, oscType2, oscType3, oscType4, oscType15,
-    // OverSample, NumInputParams };
-    // enum Outputs { Out1, Out2, Out3, Out4, Out5, Out6, NumOutputParams };
-
-    float sample_rate{(float)sampleRate()};
+    double sample_rate{(float)sampleRate()};
     
     float m_phases[4] = {0.f, 0.f,0.f, 0.f};
 
@@ -248,7 +242,7 @@ class PM7OS : public SCUnit {
     OverSample, NumInputParams };
     enum Outputs { Out1, Out2, Out3, Out4, Out5, Out6, NumOutputParams };
 
-    float sample_rate{(float)sampleRate()};
+    double sample_rate{(float)sampleRate()};
     
     float m_phases[6] = {in0(ctl1),in0(ctl4),in0(ctl7),in0(ctl0),in0(ctl3),in0(ctl6)};
 
@@ -368,7 +362,7 @@ class SawBLNext {
   public:
     SawBLNext();
     ~SawBLNext();
-    float next(float freq, float* phase, int* counter, float sampleRate, float freqMul);
+    float next(float freq, float* phase, int* counter, double sampleRate, float freqMul);
 
   private:
 
@@ -445,7 +439,7 @@ class SquareNext {
     float next(float freq, float duty);
     void setRatePhase(float rateIn, float phaseIn);
 
-  //const float samplerate{(float)sampleRate()};
+  //const double samplerate{(float)sampleRate()};
 
   private:
     //this is a bit luxurious. at 96K it can go down to 11.75hz
