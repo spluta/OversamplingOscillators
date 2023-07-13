@@ -71,15 +71,12 @@ FM7OS : MultiOutUGen  {
 }
 
 FM7aOS : MultiOutUGen  {
-	*numOperators { ^6 }
 	*ar { | ctlMatrix, modMatrix, synthTypes, oversample=4, mul=1, add=0 |
 		ctlMatrix = (ctlMatrix ?? { this.controlMatrix })
 		.collect{|item|
-			if(item[0].rate!='audio'){item[0] = K2A.ar(item[0])};
-			if(item[2].rate!='audio'){item[2] = K2A.ar(item[2])};
+			if(item.rate!='audio'){item = K2A.ar(item)};
 			item
-		}.flatten(1);
-		modMatrix = (modMatrix ?? { this.modMatrix });
+		};
 		synthTypes.do{|type,i| modMatrix[i][i] = type};
 		modMatrix.postln;
 		modMatrix = modMatrix.flatten(1)
@@ -97,7 +94,7 @@ FM7aOS : MultiOutUGen  {
 
 	init { | ... args |
 		inputs = args;
-		^this.initOutputs(this.class.numOperators, rate)
+		^this.initOutputs(4, rate)
 	}
 	checkInputs {
 		^this.checkValidInputs;
@@ -105,15 +102,12 @@ FM7aOS : MultiOutUGen  {
 }
 
 FM7bOS : MultiOutUGen  {
-	*numOperators { ^6 }
-	*ar { | ctlMatrix, modMatrix, synthTypes, oversample=4, mul=1, add=0 |
+*ar { | ctlMatrix, modMatrix, synthTypes, oversample=4, mul=1, add=0 |
 		ctlMatrix = (ctlMatrix ?? { this.controlMatrix })
 		.collect{|item|
-			if(item[0].rate!='audio'){item[0] = K2A.ar(item[0])};
-			if(item[2].rate!='audio'){item[2] = K2A.ar(item[2])};
+			if(item.rate!='audio'){item = K2A.ar(item)};
 			item
-		}.flatten(1);
-		modMatrix = (modMatrix ?? { this.modMatrix });
+		};
 		synthTypes.do{|type,i| modMatrix[i][i] = type};
 		modMatrix.postln;
 		modMatrix = modMatrix.flatten(1)
@@ -131,7 +125,7 @@ FM7bOS : MultiOutUGen  {
 
 	init { | ... args |
 		inputs = args;
-		^this.initOutputs(this.class.numOperators, rate)
+		^this.initOutputs(4, rate)
 	}
 	checkInputs {
 		^this.checkValidInputs;

@@ -194,119 +194,21 @@ namespace PMOscOS
   }
 }
 
-namespace FM7bOS
-{
-  FM7bOS::FM7bOS()
-  {
-    sample_rate = (float)sampleRate();
-    for (int i = 0; i < 6; i++)
-      oversamples[i].reset(sample_rate);
-
-    for (int i = 0; i < 6; i++)
-      oversamples[i].setOversamplingIndex(m_oversamplingIndex);
-
-    m_oversampleRatio = oversamples[0].getOversamplingRatio();
-    m_freqMul = m_freqMul / (float)m_oversampleRatio;
-
-    for (int k = 0; k < 6; k++)
-    {
-      osBuffers[k] = oversamples[k].getOSBuffer();
-      m_vals[k] = 0;
-    }
-
-    mCalcFunc = make_calc_function<FM7bOS, &FM7bOS::next_aa>();
-    next_aa(1);
-  }
-  FM7bOS::~FM7bOS() {}
-
-  void FM7bOS::next_aa(int nSamples)
-  {
-    const float *freqs[6] = {in(ctl0), in(ctl3), in(ctl6), in(ctl9), in(ctl12), in(ctl15)};
-    const float *amps[6] = {in(ctl2), in(ctl5), in(ctl8), in(ctl11), in(ctl14), in(ctl17)};
-
-    const float *mods[6][6] = {{in(modNum0), in(modNum1), in(modNum2), in(modNum3), in(modNum4), in(modNum5)},
-                               {in(modNum6), in(modNum7), in(modNum8), in(modNum9), in(modNum10), in(modNum11)},
-                               {in(modNum12), in(modNum13), in(modNum14), in(modNum15), in(modNum16), in(modNum17)},
-                               {in(modNum18), in(modNum19), in(modNum20), in(modNum21), in(modNum22), in(modNum23)},
-                               {in(modNum24), in(modNum25), in(modNum26), in(modNum27), in(modNum28), in(modNum29)},
-                               {in(modNum30), in(modNum31), in(modNum32), in(modNum33), in(modNum34), in(modNum35)}};
-
-    float *outs[6] = {out(Out1), out(Out2), out(Out3), out(Out4), out(Out5), out(Out6)};
-
-    float freqs2[6];
-
-    int wavetypes[6];
-    for (int m = 0; m < 6; m++)
-      wavetypes[m]=(int)mods[m][m][0]; 
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      float outSamps[6] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
-      for (int sawNum = 0; sawNum < 6; sawNum++)
-      {
-        freqs2[sawNum] = abs(freqs[sawNum][i]);
-
-        
-        float mod = 0;
-        for (int m = 0; m < 6; m++)
-          if (m != sawNum)
-            mod = mod + (m_vals[m] * mods[sawNum][m][i]);
-        mod = sc_clip(mod, -1.f, 1.f);
-
-        freqs2[sawNum] = freqs2[sawNum] * powf(2.f, mod * 5.f);
-        for (int k = 0; k < m_oversampleRatio; k++)
-        {
-          float out = saws[sawNum].next(freqs2[sawNum], m_phases[sawNum], m_freqMul) * amps[sawNum][i];
-          switch (wavetypes[sawNum])
-          {
-          case 0:
-            out = sin((out + 1) * pi);
-            break;
-          case 1:
-            out = abs(out) * 2.f - 1.f;
-            break;
-          case 2:
-            if (out >= 0)
-              out = 1.f;
-            else
-              out = -1.f;
-            break;
-          default:
-            out = out;
-          }
-          m_vals[sawNum] = out;
-          osBuffers[sawNum][k] = out;
-        }
-      }
-
-      for (int k = 0; k < 6; k++)
-      {
-        if (m_oversamplingIndex != 0)
-          outSamps[k] = oversamples[k].downsample();
-        else
-          outSamps[k] = osBuffers[k][0];
-        outs[k][i] = outSamps[k];
-      }
-    }
-  }
-}
-
-
 namespace FM7aOS
 {
   FM7aOS::FM7aOS()
   {
     sample_rate = (float)sampleRate();
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < numOsc; i++)
       oversamples[i].reset(sample_rate);
 
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < numOsc; i++)
       oversamples[i].setOversamplingIndex(m_oversamplingIndex);
 
     m_oversampleRatio = oversamples[0].getOversamplingRatio();
     m_freqMul = m_freqMul / (float)m_oversampleRatio;
 
-    for (int k = 0; k < 6; k++)
+    for (int k = 0; k < numOsc; k++)
     {
       osBuffers[k] = oversamples[k].getOSBuffer();
       m_vals[k] = 0;
@@ -319,45 +221,46 @@ namespace FM7aOS
 
   void FM7aOS::next_aa(int nSamples)
   {
-    const float *freqs[6] = {in(ctl0), in(ctl3), in(ctl6), in(ctl9), in(ctl12), in(ctl15)};
-    const float *amps[6] = {in(ctl2), in(ctl5), in(ctl8), in(ctl11), in(ctl14), in(ctl17)};
+    const float *freqs[numOsc];
+    const float *mods[numOsc][numOsc];
+    float *outs[numOsc];
 
-    const float *mods[6][6] = {{in(modNum0), in(modNum1), in(modNum2), in(modNum3), in(modNum4), in(modNum5)},
-                               {in(modNum6), in(modNum7), in(modNum8), in(modNum9), in(modNum10), in(modNum11)},
-                               {in(modNum12), in(modNum13), in(modNum14), in(modNum15), in(modNum16), in(modNum17)},
-                               {in(modNum18), in(modNum19), in(modNum20), in(modNum21), in(modNum22), in(modNum23)},
-                               {in(modNum24), in(modNum25), in(modNum26), in(modNum27), in(modNum28), in(modNum29)},
-                               {in(modNum30), in(modNum31), in(modNum32), in(modNum33), in(modNum34), in(modNum35)}};
+    for (int i = 0; i < numOsc; i++)
+    {
+      freqs[i] = in(i);
+      outs[i] = out(i);
+      for (int j = 0; j < numOsc; j++)
+        mods[i][j] = in(numOsc + j + (i * numOsc));
+    }
 
-    float *outs[6] = {out(Out1), out(Out2), out(Out3), out(Out4), out(Out5), out(Out6)};
+    float freqs2[numOsc];
 
-    float freqs2[6];
-
-    int wavetypes[6];
-    for (int m = 0; m < 6; m++)
-      wavetypes[m]=(int)mods[m][m][0]; 
-
+    int wavetypes[numOsc];
+    for (int m = 0; m < numOsc; m++)
+      wavetypes[m] = (int)mods[m][m][0];
 
     for (int i = 0; i < nSamples; ++i)
     {
-      float outSamps[6] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
-      for (int sawNum = 0; sawNum < 6; sawNum++)
+      // turn this into a single process
+      float outSamps[numOsc];
+      for (int j = 0; j < numOsc; j++)
+        outSamps[j] = 0.f;
+
+      for (int k = 0; k < m_oversampleRatio; k++)
       {
-        freqs2[sawNum] = freqs[sawNum][i];
-
-          float phaseMod = 0.f;
-          for (int m = 0; m < 6; m++)
-          {
-            if (m != sawNum)
-              freqs2[sawNum] = freqs2[sawNum] + (m_vals[m] * mods[sawNum][m][i]);
-          }
-    
-          //osBuffers[sineNum][k] = sines[sineNum].next(freqs2[sineNum], m_phases[sineNum] + phaseMod, m_freqMul) * amps[sineNum][i]; // m_phases[sineNum]
-
-        for (int k = 0; k < m_oversampleRatio; k++)
+        for (int oscNum = 0; oscNum < numOsc; oscNum++)
         {
-          float out = saws[sawNum].next(freqs2[sawNum], m_phases[sawNum], m_freqMul) * amps[sawNum][i];
-          switch (wavetypes[sawNum])
+
+          freqs2[oscNum] = freqs[oscNum][i];
+          for (int m = 0; m < numOsc; m++)
+          {
+            if (m != oscNum)
+              // uses the classic chowning FM formula
+              freqs2[oscNum] = freqs2[oscNum] + (m_vals[m] * mods[oscNum][m][i]);
+          }
+
+          float out = saws[oscNum].next(freqs2[oscNum], m_phases[oscNum], m_freqMul);
+          switch (wavetypes[oscNum])
           {
           case 0:
             out = sin((out + 1) * pi);
@@ -374,12 +277,117 @@ namespace FM7aOS
           default:
             out = out;
           }
-          m_vals[sawNum] = out;
-          osBuffers[sawNum][k] = out;
+          m_vals[oscNum] = out;
+          osBuffers[oscNum][k] = out;
         }
       }
 
-      for (int k = 0; k < 6; k++)
+      for (int k = 0; k < numOsc; k++)
+      {
+        if (m_oversamplingIndex != 0)
+          outSamps[k] = oversamples[k].downsample();
+        else
+          outSamps[k] = osBuffers[k][0];
+        outs[k][i] = outSamps[k];
+      }
+    }
+  }
+}
+
+namespace FM7bOS
+{
+  FM7bOS::FM7bOS()
+  {
+    sample_rate = (float)sampleRate();
+    for (int i = 0; i < numOsc; i++)
+      oversamples[i].reset(sample_rate);
+
+    for (int i = 0; i < numOsc; i++)
+      oversamples[i].setOversamplingIndex(m_oversamplingIndex);
+
+    m_oversampleRatio = oversamples[0].getOversamplingRatio();
+    m_freqMul = m_freqMul / (float)m_oversampleRatio;
+
+    for (int k = 0; k < numOsc; k++)
+    {
+      osBuffers[k] = oversamples[k].getOSBuffer();
+      m_vals[k] = 0;
+    }
+
+    mCalcFunc = make_calc_function<FM7bOS, &FM7bOS::next_aa>();
+    next_aa(1);
+  }
+  FM7bOS::~FM7bOS() {}
+
+  void FM7bOS::next_aa(int nSamples)
+  {
+    const float *freqs[numOsc];
+    const float *mods[numOsc][numOsc];
+    float *outs[numOsc];
+
+    for (int i = 0; i < numOsc; i++)
+    {
+      freqs[i] = in(i);
+      outs[i] = out(i);
+      for (int j = 0; j < numOsc; j++)
+        mods[i][j] = in(numOsc + j + (i * numOsc));
+    }
+
+    //Print("%i \n", m_oversamplingIndex);
+
+    float freqs2[numOsc];
+
+    int wavetypes[numOsc];
+    for (int m = 0; m < numOsc; m++)
+      wavetypes[m] = (int)mods[m][m][0];
+
+    for (int i = 0; i < nSamples; ++i)
+    {
+      // fill the out samples with 0s
+      float outSamps[numOsc];
+      for (int j = 0; j < numOsc; j++)
+        outSamps[j] = 0.f;
+
+      for (int k = 0; k < m_oversampleRatio; k++)
+      {
+        for (int oscNum = 0; oscNum < numOsc; oscNum++)
+        {
+          freqs2[oscNum] = abs(freqs[oscNum][i]);
+
+          // get the mod value for "analog synth" style FM
+          float mod = 0;
+          for (int m = 0; m < numOsc; m++)
+            if (m != oscNum)
+              mod = mod + (m_vals[m] * mods[oscNum][m][i]);
+          mod = sc_clip(mod, -1.f, 1.f);
+
+          // uses the "analog synth" style FM formula
+          freqs2[oscNum] = freqs2[oscNum] * powf(2.f, mod * 5.f);
+
+          float out = saws[oscNum].next(freqs2[oscNum], m_phases[oscNum], m_freqMul);
+          switch (wavetypes[oscNum])
+          {
+          case 0:
+            out = sin((out + 1) * pi);
+            break;
+          case 1:
+            out = abs(out) * 2.f - 1.f;
+            break;
+          case 2:
+            if (out >= 0)
+              out = 1.f;
+            else
+              out = -1.f;
+            break;
+          default:
+            out = out;
+          }
+          m_vals[oscNum] = out;
+          osBuffers[oscNum][k] = out;
+        }
+      }
+
+      for (int k = 0; k < numOsc; k++)
       {
         if (m_oversamplingIndex != 0)
           outSamps[k] = oversamples[k].downsample();
