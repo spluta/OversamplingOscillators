@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-20.04] #, windows-latest]
+        os: [macos-latest] #, windows-latest]
 
     steps:
     - uses: actions/checkout@v3
@@ -35,16 +35,41 @@ jobs:
     - name: Get SC source code
       run: git clone https://github.com/supercollider/supercollider.git ${{github.workspace}}/supercollider           
 
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSC_PATH=${{github.workspace}}/supercollider
 
-    - name: Build
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} 
 
-      # Gather all files in a zip
+    - name: Configure CMake (Unix)
+      shell: bash
+      if: matrix.os != 'windows-latest'
+      working-directory: ${{github.workspace}}/build
+      run: cmake .. -DCMAKE_BUILD_TYPE='Release' -DSC_PATH=${{github.workspace}}/supercollider -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install
+
+    - name: Configure CMake (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      working-directory: ${{github.workspace}}\build
+      run: cmake .. -DCMAKE_BUILD_TYPE='Release' -DSC_PATH=${{github.workspace}}\supercollider -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\build\install
+
+
+
+    - name: Build (Unix)
+      if: matrix.os != 'windows-latest'
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      env:
+        CMAKE_BUILD_PARALLEL_LEVEL: 4
+      run: cmake --build . --config "Release" --target install
+
+    - name: Build (Windows)
+      working-directory: ${{github.workspace}}\build
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      env:
+        CMAKE_BUILD_PARALLEL_LEVEL: 4
+      run: cmake --build . --config "Release" --target install
+
+
+
+        # Gather all files in a zip
     - name: Zip up build (Unix)
       if: matrix.os != 'windows-latest'
       shell: bash
@@ -52,7 +77,23 @@ jobs:
       run: zip -r "OversamplingOscillators-${{runner.os}}" "install/OversamplingOscillators"
 
 
+# Gather all files in a zip
+    - name: Zip up build (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      working-directory: ${{github.workspace}}\build
+      run: Compress-7Zip "install\OversamplingOscillators" -ArchiveFileName "OversamplingOscillators-${{runner.os}}.zip" -Format Zip    
 
+    # Upload
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ${{github.workspace}}/build/OversamplingOscillators-${{runner.os}}.zip
+        asset_name: OversamplingOscillators-${{runner.os}}.zip
+        prerelease: true
+        # body: ${{ steps.release.outputs.RELEASE_BODY }}
+        tag: ${{ github.ref }}
 
 # on:
 #   push:
