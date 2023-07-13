@@ -1,7 +1,10 @@
+name: CMake
+
 on:
   push:
-    tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -9,43 +12,80 @@ env:
 
 jobs:
   build:
-
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-18.04, windows-latest]
+    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
+    # You can convert this to a matrix build if you need cross-platform coverage.
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v3
 
     - name: Get SC source code
-      run: git clone https://github.com/supercollider/supercollider.git ${{github.workspace}}/supercollider
+       run: git clone https://github.com/supercollider/supercollider.git ${{github.workspace}}/supercollider
 
-    - name: Create Build Environment
-      # Some projects don't allow in-source building, so create a separate build directory
-      # We'll use this as our working directory for all subsequent commands
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSC_PATH=${{github.workspace}}/supercollider
 
-    - name: Configure CMake (Unix)
-      shell: bash
-      if: matrix.os != 'windows-latest'
+    - name: Build
+      # Build your program with the given configuration
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} 
+
+    - name: Test
       working-directory: ${{github.workspace}}/build
-      run: cmake .. -DCMAKE_BUILD_TYPE='Release' -DSC_PATH=${{github.workspace}}/supercollider
+      # Execute tests defined by the CMake configuration.
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      run: ctest -C ${{env.BUILD_TYPE}}
 
-    - name: Configure CMake (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      working-directory: ${{github.workspace}}\build
-      run: cmake .. -DCMAKE_BUILD_TYPE='Release' -DSC_PATH=${{github.workspace}}\supercollider
+# on:
+#   push:
+#     tags:
+#       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
-    - name: Build (Unix)
-      if: matrix.os != 'windows-latest'
-      working-directory: ${{github.workspace}}/build
-      shell: bash
-      run: cmake --build . --config "Release"
+# env:
+#   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+#   BUILD_TYPE: Release
 
-    - name: Build (Windows)
-      working-directory: ${{github.workspace}}\build
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: cmake --build . --config "Release"
+# jobs:
+#   build:
+
+#     runs-on: ${{matrix.os}}
+#     strategy:
+#       matrix:
+#         os: [macos-latest, ubuntu-18.04, windows-latest]
+
+#     steps:
+#     - uses: actions/checkout@v3
+
+#     - name: Get SC source code
+#       run: git clone https://github.com/supercollider/supercollider.git ${{github.workspace}}/supercollider
+
+#     - name: Create Build Environment
+#       # Some projects don't allow in-source building, so create a separate build directory
+#       # We'll use this as our working directory for all subsequent commands
+#       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+#     - name: Configure CMake (Unix)
+#       shell: bash
+#       if: matrix.os != 'windows-latest'
+#       working-directory: ${{github.workspace}}/build
+#       run: cmake .. -DCMAKE_BUILD_TYPE='Release' -DSC_PATH=${{github.workspace}}/supercollider
+
+#     - name: Configure CMake (Windows)
+#       if: matrix.os == 'windows-latest'
+#       shell: pwsh
+#       working-directory: ${{github.workspace}}\build
+#       run: cmake .. -DCMAKE_BUILD_TYPE='Release' -DSC_PATH=${{github.workspace}}\supercollider
+
+#     - name: Build (Unix)
+#       if: matrix.os != 'windows-latest'
+#       working-directory: ${{github.workspace}}/build
+#       shell: bash
+#       run: cmake --build . --config "Release"
+
+#     - name: Build (Windows)
+#       working-directory: ${{github.workspace}}\build
+#       if: matrix.os == 'windows-latest'
+#       shell: pwsh
+#       run: cmake --build . --config "Release"
