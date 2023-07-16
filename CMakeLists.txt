@@ -19,7 +19,10 @@ add_library(VarSawOS MODULE OversamplingOscillators.cpp)
 add_library(SquareOS MODULE OversamplingOscillators.cpp)
 add_library(PMOscOS MODULE OversamplingOscillators.cpp)
 add_library(FM7OS MODULE OversamplingOscillators.cpp)
+add_library(FM7aOS MODULE OversamplingOscillators.cpp)
+add_library(FM7bOS MODULE OversamplingOscillators.cpp)
 add_library(PM7OS MODULE OversamplingOscillators.cpp)
+
 
 add_library(SawBL MODULE OversamplingOscillators.cpp)
 add_library(SquareBL MODULE OversamplingOscillators.cpp)
