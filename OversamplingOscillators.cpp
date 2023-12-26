@@ -19,7 +19,6 @@ namespace SawOS
 
   SawOSNext::~SawOSNext() {}
 
-  // float SawBLNext::next(float freq, float *phase, int *counter, float p0n, float freqMul)
   float SawOSNext::next(float freq, float phaseIn, float m_freqMul)
   {
     float phaseDiff = (phaseIn - m_lastPhase);
@@ -38,7 +37,7 @@ namespace SawOS
 
   SawOS::SawOS()
   {
-    const double samplerate = sampleRate();
+    const float samplerate = (float) sampleRate();
 
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
@@ -541,7 +540,7 @@ namespace TriOS
 {
   TriOS::TriOS()
   {
-    const double samplerate = sampleRate();
+    const float samplerate = (float) sampleRate();
 
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
@@ -584,7 +583,7 @@ namespace VarSawOS
 
   VarSawOS::VarSawOS()
   {
-    const double samplerate = sampleRate();
+    const float samplerate = (float) sampleRate();
 
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
@@ -639,7 +638,7 @@ namespace SquareOS
 
   SquareOS::SquareOS()
   {
-    const double samplerate = sampleRate();
+    const float samplerate = (float) sampleRate();
 
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
@@ -691,7 +690,7 @@ namespace BuchlaFoldOS
 
   BuchlaFoldOS::BuchlaFoldOS()
   {
-    const double samplerate = sampleRate();
+    const float samplerate = (float) sampleRate();
 
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
@@ -767,7 +766,7 @@ namespace SergeFoldOS {
 
   SergeFoldOS::SergeFoldOS()
   {
-    const double samplerate = sampleRate();
+    const float samplerate = (float) sampleRate();
 
     sergeWavetable = getSergeWavetable();
 
@@ -783,7 +782,7 @@ namespace SergeFoldOS {
   SergeFoldOS::~SergeFoldOS() {}
 
   float SergeFoldOS::next(float sig, float amp) {
-    float out = sig*amp;
+    double out = sig*amp;
     float findex = ((out*0.5+0.5)*998.f);
     float frac = findex - (int)findex;
     int index = (int)findex;
