@@ -183,8 +183,6 @@ class FM7aOS : public SCUnit {
 
     float m_vals[4];
 
-    const int numOsc = 4;
-
     float m_freqMul{2.0f/(float)sampleRate()};
     int m_oversamplingIndex{sc_clip((int)in0(20), 0, 4)}; //input 22 should be oversample rate
     int m_oversampleRatio{(int)pow(2, m_oversamplingIndex)};
@@ -213,7 +211,7 @@ class FM7bOS : public SCUnit {
 
     float m_vals[4];
 
-    const int numOsc = 4;
+    //const int numOsc = 4;
 
     float m_freqMul{2.0f/(float)sampleRate()};
     int m_oversamplingIndex{sc_clip((int)in0(20), 0, 4)};
@@ -342,6 +340,85 @@ private:
 
 } // namespace SquareOS
 
+namespace BuchlaFoldOS {
+
+class BuchlaFoldOS : public SCUnit {
+public:
+  BuchlaFoldOS();
+
+  // Destructor
+  ~BuchlaFoldOS();
+  VariableOversampling<> oversample;
+
+private:
+  // Calc function
+  float next(float sig, float amp);
+  float next_os(float sig, float amp);
+  void next_aa(int nSamples);
+  float buchla_cell(float sig, float sign, float thresh, float sig_mul1, float sign_mul, float sig_mul2);
+
+  enum InputParams { Sig, Amp, OverSample, NumInputParams };
+  enum Outputs { Out1, NumOutputParams };
+
+  float *osBuffer;
+
+  int m_oversamplingIndex{0};
+};
+
+} // namespace BuchlaFoldOS
+
+namespace SergeFoldOS {
+
+class SergeFoldOS : public SCUnit {
+public:
+  SergeFoldOS();
+
+  // Destructor
+  ~SergeFoldOS();
+  VariableOversampling<> oversample;
+  std::array<float, 1000> sergeWavetable;
+
+private:
+  // Calc function
+  float next(float sig, float amp);
+  float next_os(float sig, float amp);
+  void next_aa(int nSamples);
+
+  enum InputParams { Sig, Amp, OverSample, NumInputParams };
+  enum Outputs { Out1, NumOutputParams };
+
+  float *osBuffer;
+
+  int m_oversamplingIndex{0};
+};
+
+} // namespace SergeFoldOS
+
+// namespace SergeFoldBL {
+
+// class SergeFoldBL : public SCUnit {
+// public:
+//   SergeFoldBL();
+
+//   // Destructor
+//   ~SergeFoldBL();
+
+// private:
+//   // Calc function
+//   float next(float sig, float amp);
+//   float next_block(double sig);
+//   void next_aa(int nSamples);
+//   double Lambert_W(double x, double ln1);
+
+//   enum InputParams { Sig, Amp, NumInputParams };
+//   enum Outputs { Out1, NumOutputParams };
+
+//   double m_Ln1{0};
+//   double m_Fn1{0};
+//   double m_xn1{0};
+// };
+
+// } // namespace SergeFoldBL
 
 namespace SawBL {
 

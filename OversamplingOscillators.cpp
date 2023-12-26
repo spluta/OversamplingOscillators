@@ -6,6 +6,7 @@
 #include "OversamplingOscillators.hpp"
 #include "SC_PlugIn.hpp"
 #include "SC_PlugIn.h"
+#include "sergeWavetable.h"
 
 static InterfaceTable *ft;
 
@@ -199,16 +200,16 @@ namespace FM7aOS
   FM7aOS::FM7aOS()
   {
     sample_rate = (float)sampleRate();
-    for (int i = 0; i < numOsc; i++)
+    for (int i = 0; i < 4; i++)
       oversamples[i].reset(sample_rate);
 
-    for (int i = 0; i < numOsc; i++)
+    for (int i = 0; i < 4; i++)
       oversamples[i].setOversamplingIndex(m_oversamplingIndex);
 
     m_oversampleRatio = oversamples[0].getOversamplingRatio();
     m_freqMul = m_freqMul / (float)m_oversampleRatio;
 
-    for (int k = 0; k < numOsc; k++)
+    for (int k = 0; k < 4; k++)
     {
       osBuffers[k] = oversamples[k].getOSBuffer();
       m_vals[k] = 0;
@@ -221,38 +222,38 @@ namespace FM7aOS
 
   void FM7aOS::next_aa(int nSamples)
   {
-    const float *freqs[numOsc];
-    const float *mods[numOsc][numOsc];
-    float *outs[numOsc];
+    const float *freqs[4];
+    const float *mods[4][4];
+    float *outs[4];
 
-    for (int i = 0; i < numOsc; i++)
+    for (int i = 0; i < 4; i++)
     {
       freqs[i] = in(i);
       outs[i] = out(i);
-      for (int j = 0; j < numOsc; j++)
-        mods[i][j] = in(numOsc + j + (i * numOsc));
+      for (int j = 0; j < 4; j++)
+        mods[i][j] = in(4 + j + (i * 4));
     }
 
-    float freqs2[numOsc];
+    float freqs2[4];
 
-    int wavetypes[numOsc];
-    for (int m = 0; m < numOsc; m++)
+    int wavetypes[4];
+    for (int m = 0; m < 4; m++)
       wavetypes[m] = (int)mods[m][m][0];
 
     for (int i = 0; i < nSamples; ++i)
     {
       // turn this into a single process
-      float outSamps[numOsc];
-      for (int j = 0; j < numOsc; j++)
+      float outSamps[4];
+      for (int j = 0; j < 4; j++)
         outSamps[j] = 0.f;
 
       for (int k = 0; k < m_oversampleRatio; k++)
       {
-        for (int oscNum = 0; oscNum < numOsc; oscNum++)
+        for (int oscNum = 0; oscNum < 4; oscNum++)
         {
 
           freqs2[oscNum] = freqs[oscNum][i];
-          for (int m = 0; m < numOsc; m++)
+          for (int m = 0; m < 4; m++)
           {
             if (m != oscNum)
               // uses the classic chowning FM formula
@@ -282,7 +283,7 @@ namespace FM7aOS
         }
       }
 
-      for (int k = 0; k < numOsc; k++)
+      for (int k = 0; k < 4; k++)
       {
         if (m_oversamplingIndex != 0)
           outSamps[k] = oversamples[k].downsample();
@@ -299,16 +300,16 @@ namespace FM7bOS
   FM7bOS::FM7bOS()
   {
     sample_rate = (float)sampleRate();
-    for (int i = 0; i < numOsc; i++)
+    for (int i = 0; i < 4; i++)
       oversamples[i].reset(sample_rate);
 
-    for (int i = 0; i < numOsc; i++)
+    for (int i = 0; i < 4; i++)
       oversamples[i].setOversamplingIndex(m_oversamplingIndex);
 
     m_oversampleRatio = oversamples[0].getOversamplingRatio();
     m_freqMul = m_freqMul / (float)m_oversampleRatio;
 
-    for (int k = 0; k < numOsc; k++)
+    for (int k = 0; k < 4; k++)
     {
       osBuffers[k] = oversamples[k].getOSBuffer();
       m_vals[k] = 0;
@@ -321,42 +322,42 @@ namespace FM7bOS
 
   void FM7bOS::next_aa(int nSamples)
   {
-    const float *freqs[numOsc];
-    const float *mods[numOsc][numOsc];
-    float *outs[numOsc];
+    const float *freqs[4];
+    const float *mods[4][4];
+    float *outs[4];
 
-    for (int i = 0; i < numOsc; i++)
+    for (int i = 0; i < 4; i++)
     {
       freqs[i] =in(i);
       outs[i] = out(i);
-      for (int j = 0; j < numOsc; j++)
-        mods[i][j] = in(numOsc + j + (i * numOsc));
+      for (int j = 0; j < 4; j++)
+        mods[i][j] = in(4 + j + (i * 4));
     }
 
     //Print("%i \n", m_oversamplingIndex);
 
-    float freqs2[numOsc];
+    float freqs2[4];
 
-    int wavetypes[numOsc];
-    for (int m = 0; m < numOsc; m++)
+    int wavetypes[4];
+    for (int m = 0; m < 4; m++)
       wavetypes[m] = (int)mods[m][m][0];
 
     for (int i = 0; i < nSamples; ++i)
     {
       // fill the out samples with 0s
-      float outSamps[numOsc];
-      for (int j = 0; j < numOsc; j++)
+      float outSamps[4];
+      for (int j = 0; j < 4; j++)
         outSamps[j] = 0.f;
 
       for (int k = 0; k < m_oversampleRatio; k++)
       {
-        for (int oscNum = 0; oscNum < numOsc; oscNum++)
+        for (int oscNum = 0; oscNum < 4; oscNum++)
         {
           freqs2[oscNum] = abs(freqs[oscNum][i]);
 
           // get the mod value for "analog synth" style FM
           float mod = 0;
-          for (int m = 0; m < numOsc; m++)
+          for (int m = 0; m < 4; m++)
             if (m != oscNum)
               mod = mod + (m_vals[m] * mods[oscNum][m][i]);
           mod = sc_clip(mod, -1.f, 1.f);
@@ -387,7 +388,7 @@ namespace FM7bOS
         }
       }
 
-      for (int k = 0; k < numOsc; k++)
+      for (int k = 0; k < 4; k++)
       {
         if (m_oversamplingIndex != 0)
           outSamps[k] = oversamples[k].downsample();
@@ -685,6 +686,263 @@ namespace SquareOS
   }
 }
 
+namespace BuchlaFoldOS
+{
+
+  BuchlaFoldOS::BuchlaFoldOS()
+  {
+    const double samplerate = sampleRate();
+
+    oversample.reset(samplerate);
+    m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
+    oversample.setOversamplingIndex(m_oversamplingIndex);
+
+    osBuffer = oversample.getOSBuffer();
+
+    mCalcFunc = make_calc_function<BuchlaFoldOS, &BuchlaFoldOS::next_aa>();
+    next_aa(1);
+  }
+
+  BuchlaFoldOS::~BuchlaFoldOS() {}
+
+  float BuchlaFoldOS::buchla_cell(float sig, float sign, float thresh, float sig_mul1, float sign_mul, float sig_mul2) {
+    if (std::abs(sig) > thresh) {
+        return (sig * sig_mul1 - (sign * sign_mul)) * sig_mul2;
+    } else {
+        return 0.0f;
+    }
+  }
+
+  float BuchlaFoldOS::next(float sig, float amp) {
+    float out;
+    if(amp>0.f){
+      sig = sig * amp;
+      float sign = (sig >= 0.0f) ? 1.0f : -1.0f;
+      float v1 = buchla_cell(sig, sign, 0.6f, 0.8333f, 0.5f, 12.0f);
+      float v2 = buchla_cell(sig, sign, 2.994f, 0.3768f, 1.1281f, 27.777f);
+      float v3 = buchla_cell(sig, sign, 5.46f, 0.2829f, 1.5446f, 21.428f);
+      float v4 = buchla_cell(sig, sign, 1.8f, 0.5743f, 1.0338f, 17.647f);
+      float v5 = buchla_cell(sig, sign, 4.08f, 0.2673f, 1.0907f, 36.363f);
+      float v6 = sig * 5.0f;
+      out = ((v1 + v2 + v3)*(-1.f))+ v4 + v5 + v6;
+      out = out / 5.0f;
+    } else {
+      out = 0.f;
+    }
+    
+    return out;
+  }
+
+  float BuchlaFoldOS::next_os(float sig, float amp)
+  {
+    float out;
+    
+    oversample.upsample(sig);
+
+    for (int k = 0; k < oversample.getOversamplingRatio(); k++){
+      osBuffer[k] = next(osBuffer[k], amp);
+    }
+    if (m_oversamplingIndex != 0)
+      out = oversample.downsample();
+    else
+      out = osBuffer[0];
+    return out;
+  }
+
+  void BuchlaFoldOS::next_aa(int nSamples)
+  {
+
+    const float *sig = in(Sig);
+    const float *amp = in(Amp);
+    float *outbuf = out(Out1);
+
+    for (int i = 0; i < nSamples; ++i)
+    {
+      outbuf[i] = next_os(sig[i], amp[i]);
+    }
+  }
+}
+
+namespace SergeFoldOS {
+
+  SergeFoldOS::SergeFoldOS()
+  {
+    const double samplerate = sampleRate();
+
+    sergeWavetable = getSergeWavetable();
+
+    oversample.reset(samplerate);
+    m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
+    oversample.setOversamplingIndex(m_oversamplingIndex);
+
+    osBuffer = oversample.getOSBuffer();
+
+    mCalcFunc = make_calc_function<SergeFoldOS, &SergeFoldOS::next_aa>();
+    next_aa(1);
+  } 
+  SergeFoldOS::~SergeFoldOS() {}
+
+  float SergeFoldOS::next(float sig, float amp) {
+    float out = sig*amp;
+    float findex = ((out*0.5+0.5)*998.f);
+    float frac = findex - (int)findex;
+    int index = (int)findex;
+
+    if (index < 0) index = 0;
+    if (index > 998) index = 998;
+
+    out = sergeWavetable[index]*(1.0f-frac) + sergeWavetable[index+1]*frac;
+
+    if(amp>1.f) {out = out*amp;}
+
+    out = tanh(out);
+
+    return out;
+  }
+
+  float SergeFoldOS::next_os(float sig, float amp)
+  {
+    float out;
+    
+    oversample.upsample(sig);
+
+    for (int k = 0; k < oversample.getOversamplingRatio(); k++){
+      osBuffer[k] = next(osBuffer[k], amp);
+    }
+    if (m_oversamplingIndex != 0)
+      out = oversample.downsample();
+    else
+      out = osBuffer[0];
+    return out;
+  }
+
+  void SergeFoldOS::next_aa(int nSamples)
+  {
+
+    const float *sig = in(Sig);
+    const float *amp = in(Amp);
+    float *outbuf = out(Out1);
+
+    for (int i = 0; i < nSamples; ++i)
+    {
+      outbuf[i] = next_os(sig[i], amp[i]);
+    }
+  }
+}
+
+// namespace SergeFoldBL
+// {
+
+//   SergeFoldBL::SergeFoldBL()
+//   {
+//     const double samplerate = sampleRate();
+
+//     mCalcFunc = make_calc_function<SergeFoldBL, &SergeFoldBL::next_aa>();
+//     next_aa(1);
+//   }
+
+//   SergeFoldBL::~SergeFoldBL() {}
+
+//   double SergeFoldBL::Lambert_W(double x, double ln1) {
+
+//     // Error threshold
+//     double thresh = 10e-10;
+//     // Initial guess (use previous value)
+//     double w = ln1;
+
+//     // Haley's method (Sec. 4.2 of the paper)
+//     for(int i=0; i<1000; i+=1) {
+      
+//       double expw = powf(2.7182818284f,w);
+
+//       double p = w*expw - x;
+//       double r = (w+1.0)*expw;
+//       double s = (w+2.0)/(2.0*(w+1.0));        
+//       double err = (p/(r-(p*s)));
+        
+//       if (abs(err)<thresh) {
+//           break;
+//       }
+      
+//       w = w - err;
+//     }
+
+//     return w;
+//   }
+
+//   float SergeFoldBL::next_block(double sig) {
+//     float out;
+
+//     // Constants
+//     const double RL = 7.5e3;
+//     const double R = 15e3;  
+//     const double VT = 26e-3;
+//     const double Is = 10e-16;
+
+//     const double a = 2.f*RL/R;
+//     const double b = (R+2.f*RL)/(VT*R);
+//     const double d = (RL*Is)/VT;
+
+//     std::printf("%f %f \n", sig, d);
+
+//     // Antialiasing error threshold
+//     const double thresh = 10e-10;
+
+//     // Compute Antiderivative
+//     double l = (sig >= 0.0f) ? 1.0f : -1.0f;
+//     double u = d*pow(2.7182818284f,l*b*sig);
+//     double Ln = Lambert_W(u,m_Ln1);
+//     double Fn = (0.5*VT/b)*(Ln*(Ln + 2.f)) - 0.5*a*sig*sig;
+
+//     // Check for ill-conditioning
+//     if (abs(sig-m_xn1)<thresh) {
+        
+//       // Compute Averaged Wavefolder Output
+//       double xn = 0.5*(sig+m_xn1);
+//       u = d*pow(2.7182818284f,l*b*xn);
+//       Ln = Lambert_W(u,m_Ln1);
+//       out = (float)(l*VT*Ln - a*xn);
+
+//     }
+//     else {
+//       // Apply AA Form
+//       out = (Fn-m_Fn1)/(sig-m_xn1);
+//     }
+
+//     // Update States
+//     m_Ln1 = Ln;
+//     m_Fn1 = Fn;
+//     m_xn1 = sig;
+    
+//     return out;
+//   }
+
+//   float SergeFoldBL::next(float sig, float amp) {
+
+//     sig = sig*amp/3.f;
+//     sig = next_block(sig);
+//     sig = next_block(sig);
+//     sig = next_block(sig);
+//     sig = next_block(sig);
+//     sig = sig*3.f;
+
+//     return sig;
+//   }
+
+//   void SergeFoldBL::next_aa(int nSamples)
+//   {
+
+//     const float *sig = in(Sig);
+//     const float *amp = in(Amp);
+//     float *outbuf = out(Out1);
+
+//     for (int i = 0; i < nSamples; ++i)
+//     {
+//       outbuf[i] = next(sig[i], amp[i]);
+//     }
+//   }
+// }
+
 namespace SawBL
 {
   SawBLNext::SawBLNext()
@@ -961,6 +1219,10 @@ PluginLoad(OversamplingOscillators)
   registerUnit<FM7aOS::FM7aOS>(ft, "FM7aOS", false);
   registerUnit<FM7bOS::FM7bOS>(ft, "FM7bOS", false);
   registerUnit<PM7OS::PM7OS>(ft, "PM7OS", false);
+
+  registerUnit<BuchlaFoldOS::BuchlaFoldOS>(ft, "BuchlaFoldOS", false);
+  registerUnit<SergeFoldOS::SergeFoldOS>(ft, "SergeFoldOS", false);
+  //registerUnit<SergeFoldBL::SergeFoldBL>(ft, "SergeFoldBL", false);
 
   registerUnit<SawBL::SawBL>(ft, "SawBL", false);
   registerUnit<SquareBL::SquareBL>(ft, "SquareBL", false);

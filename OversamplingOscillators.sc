@@ -512,6 +512,32 @@ VarSawOS : UGen {
 	}
 }
 
+BuchlaFoldOS : UGen {
+	*ar { |sig, amp = 1, oversample=1, mul = 1, add = 0|
+		if(sig.rate!='audio'){sig = K2A.ar(sig)};
+		if(amp.rate!='audio'){amp = K2A.ar(amp)};
+		^this.multiNew('audio', sig, amp, oversample).madd(mul, add);
+	}
+
+	checkInputs {
+		/* TODO */
+		^this.checkValidInputs;
+	}
+}
+
+SergeFoldOS : UGen {
+	*ar { |sig, amp = 1, oversample=1, mul = 1, add = 0|
+		if(sig.rate!='audio'){sig = K2A.ar(sig)};
+		if(amp.rate!='audio'){amp = K2A.ar(amp)};
+		^this.multiNew('audio', sig, amp, oversample).madd(mul, add);
+	}
+
+	checkInputs {
+		/* TODO */
+		^this.checkValidInputs;
+	}
+}
+
 SawBL : UGen {
 	*ar { |freq=440, iphase=0, mul=1, add=0|
 		if(freq.rate!='audio'){freq = K2A.ar(freq)};
