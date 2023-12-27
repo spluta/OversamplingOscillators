@@ -1,7 +1,7 @@
 TITLE:: SergeFoldOS
 summary:: Oversampled Wavefolder based loosely on the Serge Wavefolder
 categories:: UGens>Distortion
-related:: Fold, BuchlaFoldOS, SinOscOS, TriOS, SawOS, SquareOS, VarSawOS, PMOscOS, PM7OS, FM7OS
+related:: BuchlaFoldOS, SinOscOS, TriOS, SawOS, SquareOS, VarSawOS, PMOscOS, PM7OS, FM7OS
 
 DESCRIPTION::
 A wavefolder in the shape of the classic Serge wavefolder.  Derived from LINK::http://research.spa.aalto.fi/publications/papers/smc17-wavefolder/##Virtual Analog Model of the Lockhart Wavefolder::
