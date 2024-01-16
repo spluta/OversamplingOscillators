@@ -588,3 +588,20 @@ ImpulseBL : UGen {
 		^this.checkValidInputs;
 	}
 }
+
+ShaperOS : PureUGen {
+	*ar {
+		arg bufnum, in, oversample = 1, mul = 1.0, add = 0.0;
+		if(in.rate!='audio'){in = K2A.ar(in)};
+		^this.multiNew('audio', bufnum, in, oversample).madd(mul, add)
+	}
+}
+
+OscOS : PureUGen {
+	*ar {
+		arg bufnum, phase, bufdivs = 1, bufloc, oversample = 1, mul = 1.0, add = 0.0;
+		if(phase.rate!='audio'){phase = K2A.ar(phase)};
+		if(bufloc.rate!='audio'){bufloc = K2A.ar(bufloc)};
+		^this.multiNew('audio', bufnum, phase, bufdivs, bufloc, oversample).madd(mul, add)
+	}
+}

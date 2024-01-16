@@ -23,10 +23,14 @@ add_library(FM7aOS MODULE OversamplingOscillators.cpp)
 add_library(FM7bOS MODULE OversamplingOscillators.cpp)
 add_library(PM7OS MODULE OversamplingOscillators.cpp)
 
-add_library(BuchlaFoldOS MODULE OversamplingOscillators.cpp)
-add_library(SergeFoldOS MODULE OversamplingOscillators.cpp)
+add_library(BuchlaFoldOS MODULE OversamplingWavefolders.cpp)
+add_library(SergeFoldOS MODULE OversamplingWavefolders.cpp)
 
 add_library(SawBL MODULE OversamplingOscillators.cpp)
 add_library(SquareBL MODULE OversamplingOscillators.cpp)
 add_library(ImpulseBL MODULE OversamplingOscillators.cpp)
 add_library(TriBL MODULE OversamplingOscillators.cpp)
+
+#add_library(ShaperOS MODULE OversamplingWavetableOsc.cpp)
+add_library(ShaperOS MODULE OversamplingWavefolders.cpp)
+add_library(OscOS MODULE OversamplingWavefolders.cpp)
