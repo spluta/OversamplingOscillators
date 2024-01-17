@@ -380,15 +380,29 @@ namespace OscOS {
     float phase1 = sc_clip(phase, 0.f, 1.0f);
     float buf_loc1 = sc_clip(buf_loc, 0.f, 1.0f);
 
-    float phase_diff = (phase1 - m_last_phase)/oversample.getOversamplingRatio();
-    float loc_diff = (buf_loc1 - m_last_buf_loc)/oversample.getOversamplingRatio();
+    float phase_diff = (phase1 - m_last_phase);
+    float loc_diff = (buf_loc1 - m_last_buf_loc);
 
     
     //Print("m_last_phase: %f, phase1: %f, phase_diff: %f, m_last_buf_loc: %f, buf_loc1: %f, loc_diff: %f\n", m_last_phase, phase1, phase_diff, m_last_buf_loc, buf_loc1, loc_diff);
   //m_last_phase+(k*phase_diff)
+
+  //the phase_diff should not be more than 0.5 except when the phase crosses from 1 to 0 or vice versa
+  //even at the nyquist frequency, the phase_diff should not be more than 0.5
+  if(abs(phase_diff) > 0.5f)
     for (int k = 0; k < oversample.getOversamplingRatio(); k++){
       osBuffer[k] = Perform(table0, phase1, buf_divs, buf_loc1, table_size, fmaxindex);
     }
+  else {
+    phase_diff = phase_diff/oversample.getOversamplingRatio();
+    for (int k = 0; k < oversample.getOversamplingRatio(); k++){
+      osBuffer[k] = Perform(table0, m_last_phase+(k*phase_diff), buf_divs, m_last_buf_loc+(k*loc_diff), table_size, fmaxindex);
+    }
+  }
+
+
+    m_last_phase = phase1;
+    m_last_buf_loc = buf_loc1;
 
     if (m_oversamplingIndex != 0)
       out = oversample.downsample();

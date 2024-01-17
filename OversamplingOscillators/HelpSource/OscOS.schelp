@@ -1,0 +1,129 @@
+TITLE:: OscOS
+summary:: Oversampled Wavetable Oscillator
+categories:: Undocumented classes, UGens>Undocumented
+related:: BuchlaFoldOS, ShaperOS
+
+DESCRIPTION::
+An oversampled wavetable oscillator that interpolates between adjacent tables.
+
+
+CLASSMETHODS::
+
+METHOD:: ar
+audio rate
+
+ARGUMENT:: bufnum
+The buffer of the wavetable. This ugen always uses a single buffer, but it can interpolated between adjacent tables that reside in a single buffer.
+
+OscSC uses standard buffers, not specially formatted Wavetable buffers like Osc and VOsc.
+
+ARGUMENT:: phase
+Values between 0-1. OscOS does not have its own internal clock. Instead it relies on a phasor lookup.
+
+ARGUMENT:: bufdivs
+The number of separate wavetables in the provided buffer.
+
+ARGUMENT:: bufloc
+Values between 0-1. Points the current wavetable. Values between wavetables will result in a linearly interpolated output between wavetables.
+
+ARGUMENT:: oversample
+OverSampling Index
+
+0 = none, 1 = 2x, 2 = 4x, 3 = 8x, 4 = 16x
+
+ARGUMENT:: mul
+amplitude multiplier
+
+ARGUMENT:: add
+value added to the signal
+
+
+
+INSTANCEMETHODS::
+
+
+EXAMPLES::
+
+code::
+//fill a buffer with 4 different waveforms
+(
+    t = Signal.sineFill(512, [1], [0]);
+    u = Signal.sineFill(512, 1.0/(1..56));
+    w = Signal.sineFill(512, 1.0/(1..56)*([1,0]!28).flatten);
+    x = Signal.sineFill(512, 1.0/((1..56)**2)*([1,0,-1,0]!14).flatten);
+    v = t.addAll(u).addAll(w).addAll(x);
+
+    b = Buffer.loadCollection(s, v);
+)
+
+//plot the buffer if you like
+b.plot;
+
+(
+    {
+        var phase = Phasor.ar(0,100/SampleRate.ir);
+        var osc = OscOS.ar(b,phase,4,MouseX.kr,4,0.1);
+        osc
+    }.scope
+)
+
+//LFSaw also works
+(
+    {
+        var phase = [Phasor.ar(0,100/SampleRate.ir),LFSaw.ar(100,1).range(0,1)];
+        var osc = OscOS.ar(b,phase,4,MouseX.kr,4,0.1);
+        osc
+    }.scope
+)
+
+//using a phase input allows for fun wavetable warping
+(
+    {
+        var phase = LFSaw.ar(100,1);
+        var osc;
+        var midpoint = MouseY.kr(0.1,0.9);
+        phase = Select.ar(phase>0,[
+            phase.bilin(midpoint.neg,-1,0,-0.5,-1,0),
+            phase.bilin(midpoint,0,1,0.5,0,1)
+        ])*0.5+0.5;
+        osc = OscOS.ar(b,phase,4,MouseX.kr,4,0.1);
+        osc.dup
+    }.scope
+)
+
+(
+    {
+        var phase = LFSaw.ar(100,1);
+        var osc;
+        var midpoint = MouseY.kr(0.1,0.9);
+        phase = Select.ar(phase>0,[
+            phase.bilin(midpoint.neg,-1,0,(1-midpoint).neg,-1,0),
+            phase.bilin(midpoint,0,1,1-midpoint,0,1)
+        ])*0.5+0.5;
+        osc = OscOS.ar(b,phase,4,MouseX.kr,4,0.1);
+        osc.dup
+    }.scope
+)
+
+//LFSaw works best for frequency modulation
+(
+    {
+        var fm = SinOsc.ar(100,-0.1,MouseY.kr(0,5000));
+        var phase = LFSaw.ar(50+fm).range(0,1);
+        var osc = OscOS.ar(b,phase,4,MouseX.kr,4, 0.1);
+        osc.dup
+    }.scope
+)
+
+//you can also load samples from commercial wavetable oscillators
+c = Buffer.read(s, "/Users/spluta1/Music/Vital/Glorkglunk/Wavetables/Granular Upgrade.wav")
+
+(
+    {
+        var phase = LFSaw.ar(53.midicps/4).range(0,1);
+        var osc = OscOS.ar(c,phase,108,MouseX.kr.poll);
+        osc.dup
+    }.scope
+)
+
+::
