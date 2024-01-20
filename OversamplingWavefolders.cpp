@@ -335,6 +335,7 @@ namespace OscOS {
     float frac = findex - index;
     int ibuf_divs = (int)buf_divs;
     float out;
+    float tab0;
     if(ibuf_divs > 1){
 
       fbuf_loc = fbuf_loc*(buf_divs-1);
@@ -343,10 +344,11 @@ namespace OscOS {
       if(ibuf_loc == ibuf_divs-1)
       {
         int loc = index+(ibuf_loc*table_size);
+        tab0 = table0[loc];
         if (index==table_size-1)
-          out = table0[loc]*(1.0f-frac) + table0[ibuf_loc*table_size]*frac;
+          out = (table0[ibuf_loc * table_size] - tab0) * frac + tab0;
         else
-          out = table0[loc]*(1.0f-frac) + table0[loc+1]*frac;
+          out = (table0[loc+1] - tab0) * frac + tab0;
       } else {
 
         float frac_loc = fbuf_loc - ibuf_loc;
@@ -357,17 +359,22 @@ namespace OscOS {
         float out1, out2;
         if (index==table_size-1)
         {
-          out1 = table0[final_index]*(1.0f-frac) + table0[ibuf_loc*table_size]*frac;
-          out2 = table0[final_index2]*(1.0f-frac) + table0[(ibuf_loc+1)*table_size]*frac;
+          tab0 = table0[final_index];
+          out1 = (table0[ibuf_loc*table_size] - tab0) * frac + tab0;
+          tab0 = table0[final_index2];
+          out2 = (table0[(ibuf_loc+1) * table_size] - tab0) * frac + tab0;
         } else {
-          out1 = table0[final_index]*(1.0f-frac) + table0[final_index+1]*frac;
-          out2 = table0[final_index2]*(1.0f-frac) + table0[final_index2+1]*frac;
+          tab0 = table0[final_index];
+          out1 = (table0[final_index+1] - tab0) * frac + tab0;
+          tab0 = table0[final_index2];
+          out2 = (table0[final_index2+1] - tab0) * frac + tab0;
         }
 
-        out = out1*(1.0f-frac_loc) + out2*frac_loc;
+        out = (out2 - out1) * frac_loc + out1;
       }
     } else {
-      out = table0[index]*(1.0f-frac) + table0[index+1]*frac;
+      tab0 = table0[index];
+      out = (table0[index+1] - tab0) * frac + tab0;
     }
 
   return out;
@@ -380,33 +387,20 @@ namespace OscOS {
     float phase1 = sc_clip(phase, 0.f, 1.0f);
     float buf_loc1 = sc_clip(buf_loc, 0.f, 1.0f);
 
-    // float phase_diff = (phase1 - m_last_phase);
-    // float loc_diff = (buf_loc1 - m_last_buf_loc);
-
-    
-    for (int k = 0; k < oversample.getOversamplingRatio(); k++){
-      osBuffer[k] = Perform(table0, phase1, buf_divs, buf_loc1, table_size, fmaxindex);
+    int osRatio = oversample.getOversamplingRatio();
+    if(buf_loc1 == m_last_buf_loc) {
+      for (int k = 0; k < osRatio; k++){
+        osBuffer[k] = Perform(table0, phase1, buf_divs, buf_loc1, table_size, fmaxindex);
+      }
+    } else {
+      for (int k = 0; k < osRatio; k++) {
+	float oldTable = Perform(table0, phase1, buf_divs, m_last_buf_loc, table_size, fmaxindex);
+	float newTable = Perform(table0, phase1, buf_divs, buf_loc1, table_size, fmaxindex);
+        osBuffer[k] = (newTable - oldTable) * ((float) k / osRatio) + oldTable;
+      }
     }
 
-    //Print("m_last_phase: %f, phase1: %f, phase_diff: %f, m_last_buf_loc: %f, buf_loc1: %f, loc_diff: %f\n", m_last_phase, phase1, phase_diff, m_last_buf_loc, buf_loc1, loc_diff);
-  //m_last_phase+(k*phase_diff)
-
-  //the phase_diff should not be more than 0.5 except when the phase crosses from 1 to 0 or vice versa
-  //even at the nyquist frequency, the phase_diff should not be more than 0.5
-  // if(abs(phase_diff) > 0.5f)
-  //   for (int k = 0; k < oversample.getOversamplingRatio(); k++){
-  //     osBuffer[k] = Perform(table0, phase1, buf_divs, buf_loc1, table_size, fmaxindex);
-  //   }
-  // else {
-  //   phase_diff = phase_diff/oversample.getOversamplingRatio();
-  //   for (int k = 0; k < oversample.getOversamplingRatio(); k++){
-  //     osBuffer[k] = Perform(table0, m_last_phase+(k*phase_diff), buf_divs, m_last_buf_loc+(k*loc_diff), table_size, fmaxindex);
-  //   }
-  // }
-
-
-    // m_last_phase = phase1;
-    // m_last_buf_loc = buf_loc1;
+    m_last_buf_loc = buf_loc1;
 
     if (m_oversamplingIndex != 0)
       out = oversample.downsample();
