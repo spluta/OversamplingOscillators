@@ -338,27 +338,27 @@ namespace OscOS {
     if(ibuf_divs > 1){
 
       fbuf_loc = fbuf_loc*(buf_divs-1);
-      int buf_loc = (int)fbuf_loc;
+      int ibuf_loc = (int)fbuf_loc;
 
-      if(buf_loc == buf_divs-1)
+      if(ibuf_loc == ibuf_divs-1)
       {
-        int loc = index+((buf_loc)*table_size);
+        int loc = index+(ibuf_loc*table_size);
         if (index==table_size-1)
-          out = table0[loc]*(1.0f-frac) + table0[buf_loc*table_size]*frac;
+          out = table0[loc]*(1.0f-frac) + table0[ibuf_loc*table_size]*frac;
         else
           out = table0[loc]*(1.0f-frac) + table0[loc+1]*frac;
       } else {
 
-        float frac_loc = fbuf_loc - buf_loc;
+        float frac_loc = fbuf_loc - ibuf_loc;
 
-        int final_index = index + (buf_loc*table_size);
+        int final_index = index + (ibuf_loc*table_size);
         int final_index2 = final_index + table_size;
 
         float out1, out2;
         if (index==table_size-1)
         {
-          out1 = table0[final_index]*(1.0f-frac) + table0[buf_loc*table_size]*frac;
-          out2 = table0[final_index2]*(1.0f-frac) + table0[(buf_loc+1)*table_size]*frac;
+          out1 = table0[final_index]*(1.0f-frac) + table0[ibuf_loc*table_size]*frac;
+          out2 = table0[final_index2]*(1.0f-frac) + table0[(ibuf_loc+1)*table_size]*frac;
         } else {
           out1 = table0[final_index]*(1.0f-frac) + table0[final_index+1]*frac;
           out2 = table0[final_index2]*(1.0f-frac) + table0[final_index2+1]*frac;

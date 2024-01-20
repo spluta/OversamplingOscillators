@@ -24,7 +24,7 @@ ARGUMENT:: bufdivs
 The number of separate wavetables in the provided buffer.
 
 ARGUMENT:: bufloc
-Values between 0-1. Points the current wavetable. Values between wavetables will result in a linearly interpolated output between wavetables.
+Values between 0-1. Points the current wavetable. Values between wavetables will result in a linearly interpolated output between wavetables. The value indicates the location in the buffer array. Divisions are at bufindex/numbufs-1. So, with 4 buffers, the divisions are at 0, 0.333, 0.666, and 1, etc.
 
 ARGUMENT:: oversample
 OverSampling Index
