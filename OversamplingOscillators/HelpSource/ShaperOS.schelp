@@ -1,7 +1,7 @@
 class:: ShaperOS
 summary:: Wave shaper.
-related:: Classes/Index, Classes/WrapIndex, Classes/Wavetable
-categories::  UGens>Shaper, BuchlaFoldOS, SergeFoldOS, OscOS
+related:: Classes/Shaper, BuchlaFoldOS, SergeFoldOS, OscOS
+categories::  UGens>Buffer
 
 Description::
 Performs waveshaping on the input signal by indexing into the table. This
@@ -26,26 +26,26 @@ s.boot;
 
 //fill a buffer with a Lockhardt wavefolder shaped function
 (
-    
+
     e = Env.new([-1,0.66,-0.66,0.66,-0.66,0.66,-0.66,0.66,-0.66,1],[150,100,100,100,100,100,100,100,150]);
     e = e.asSignal(5000);
-    
+
     //low pass filter the env
     ~last = -1;
-    f = e.collect{|item,i| 
+    f = e.collect{|item,i|
         var coef = 0.97;
-        item = (1-coef.abs*item)+(~last*coef); ~last = item; 
+        item = (1-coef.abs*item)+(~last*coef); ~last = item;
         item
     };
-    f = e.reverse.collect{|item,i| 
+    f = e.reverse.collect{|item,i|
         var coef = 0.97;
-        item = (1-coef.abs*item)+(~last*coef); ~last = item; 
+        item = (1-coef.abs*item)+(~last*coef); ~last = item;
         item
     }.reverse;
     [e,f].plot;
     b = Buffer.loadCollection(s, f.as(Signal));
 )
-    
+
 (
     //read into the table
     {
@@ -57,9 +57,9 @@ s.boot;
             2,
             1
         );
-      
+
         ((d*2).tanh*0.1).dup
-    
+
     }.scope(bufsize:1600);
 )
 ::
