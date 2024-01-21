@@ -76,7 +76,29 @@ b.plot;
     }.scope
 )
 
+//modulate the buffer location very quickly
+
+(
+    t = Signal.sineFill(512, [1], [0]);
+    u = Env([0,1,-1,0],[0.25,0.5,0.25]).asSignal(512);
+    v = t.addAll(u);
+
+    b = Buffer.loadCollection(s, v);
+)
+
+//plot the buffer if you like
+b.plot;
+
+(
+    {
+        var phase = LFSaw.ar(400).range(0,1);
+        var osc = OscOS.ar(b,phase,4,SinOsc.ar(MouseY.kr(1,2000)).range(0,1));
+        osc.dup*0.1
+    }.scope
+)
+
 //using a phase input allows for fun wavetable warping
+//(at high frequencies and extreme warping, the internal algorithm with distort)
 (
     {
         var phase = LFSaw.ar(100,1);

@@ -16,6 +16,8 @@ namespace BuchlaFoldOS
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
+    m_oversampling_ratio = oversample.getOversamplingRatio();
+
     osBuffer = oversample.getOSBuffer();
 
     mCalcFunc = make_calc_function<BuchlaFoldOS, &BuchlaFoldOS::next_aa>();
@@ -58,7 +60,7 @@ namespace BuchlaFoldOS
     
     oversample.upsample(sig);
 
-    for (int k = 0; k < oversample.getOversamplingRatio(); k++){
+    for (int k = 0; k < m_oversampling_ratio; k++){
       osBuffer[k] = next(osBuffer[k], amp);
     }
     if (m_oversamplingIndex != 0)
@@ -94,6 +96,7 @@ namespace SergeFoldOS {
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
+  m_oversampling_ratio = oversample.getOversamplingRatio();
 
     osBuffer = oversample.getOSBuffer();
 
@@ -128,7 +131,7 @@ namespace SergeFoldOS {
     
     oversample.upsample(sig);
 
-    for (int k = 0; k < oversample.getOversamplingRatio(); k++){
+    for (int k = 0; k < m_oversampling_ratio; k++){
       osBuffer[k] = next(osBuffer[k], amp);
     }
     if (m_oversamplingIndex != 0)
@@ -211,47 +214,14 @@ namespace ShaperOS {
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
 
+    m_oversampling_ratio = oversample.getOversamplingRatio();
+
     osBuffer = oversample.getOSBuffer();
 
     mCalcFunc = make_calc_function<ShaperOS, &ShaperOS::next_aa>();
     next_aa(1);
   } 
   ShaperOS::~ShaperOS() {}
-
-//   bool ShaperOS::GetTable(float fbufnum, int inNumSamples, const SndBuf*& buf, const float*& bufData,
-//                                int& tableSize) {
-    
-//     if (fbufnum != m_fbufnum) {
-//         uint32 bufnum = (uint32)fbufnum;
-//         World* world = mWorld;
-//         if (bufnum >= world->mNumSndBufs) {
-//             uint32 localBufNum = bufnum - world->mNumSndBufs;
-//             Graph* parent = mParent;
-//             if (localBufNum <= parent->localBufNum)
-//                 m_buf = parent->mLocalSndBufs + localBufNum;
-//             else {
-//                 bufnum = 0;
-//                 m_buf = world->mSndBufs + bufnum;
-//             }
-//         } else
-//             m_buf = world->mSndBufs + bufnum;
-
-//         m_fbufnum = fbufnum;
-//     }
-//     buf = m_buf;
-//     if (!buf) {
-//         ClearUnitOutputs(this, inNumSamples);
-//         return false;
-//     }
-
-//     bufData = buf->data;
-//     if (!bufData) {
-//         ClearUnitOutputs(this, inNumSamples);
-//         return false;
-//     }
-//     tableSize = buf->samples;
-//     return true;
-// }
 
  float ShaperOS::Perform(const float* table0, float in, float fmaxindex) {
 
@@ -272,7 +242,7 @@ namespace ShaperOS {
     
     oversample.upsample(in);
 
-    for (int k = 0; k < oversample.getOversamplingRatio(); k++){
+    for (int k = 0; k < m_oversampling_ratio; k++){
       osBuffer[k] = Perform(table0, osBuffer[k], fmaxindex);
     }
     if (m_oversamplingIndex != 0)
@@ -309,6 +279,7 @@ namespace OscOS {
   {
     const float samplerate = (float) sampleRate();
 
+
     m_fbufnum = std::numeric_limits<float>::quiet_NaN();
     m_buf = nullptr;
 
@@ -320,8 +291,13 @@ namespace OscOS {
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
     oversample.setOversamplingIndex(m_oversamplingIndex);
-
     osBuffer = oversample.getOSBuffer();
+
+    upsample_buf_loc.reset(samplerate);
+    upsample_buf_loc.setOversamplingIndex(m_oversamplingIndex);
+    upsample_buf = upsample_buf_loc.getOSBuffer();
+
+    m_oversampling_ratio = oversample.getOversamplingRatio();
 
     mCalcFunc = make_calc_function<OscOS, &OscOS::next_aa>();
     next_aa(1);
@@ -380,33 +356,33 @@ namespace OscOS {
     float phase1 = sc_clip(phase, 0.f, 1.0f);
     float buf_loc1 = sc_clip(buf_loc, 0.f, 1.0f);
 
-    // float phase_diff = (phase1 - m_last_phase);
-    // float loc_diff = (buf_loc1 - m_last_buf_loc);
+    float phase_diff = (phase1 - m_last_phase);
 
-    
-    for (int k = 0; k < oversample.getOversamplingRatio(); k++){
-      osBuffer[k] = Perform(table0, phase1, buf_divs, buf_loc1, table_size, fmaxindex);
-    }
-
-    //Print("m_last_phase: %f, phase1: %f, phase_diff: %f, m_last_buf_loc: %f, buf_loc1: %f, loc_diff: %f\n", m_last_phase, phase1, phase_diff, m_last_buf_loc, buf_loc1, loc_diff);
-  //m_last_phase+(k*phase_diff)
+    upsample_buf_loc.upsample(buf_loc1);
 
   //the phase_diff should not be more than 0.5 except when the phase crosses from 1 to 0 or vice versa
   //even at the nyquist frequency, the phase_diff should not be more than 0.5
-  // if(abs(phase_diff) > 0.5f)
-  //   for (int k = 0; k < oversample.getOversamplingRatio(); k++){
-  //     osBuffer[k] = Perform(table0, phase1, buf_divs, buf_loc1, table_size, fmaxindex);
-  //   }
-  // else {
-  //   phase_diff = phase_diff/oversample.getOversamplingRatio();
-  //   for (int k = 0; k < oversample.getOversamplingRatio(); k++){
-  //     osBuffer[k] = Perform(table0, m_last_phase+(k*phase_diff), buf_divs, m_last_buf_loc+(k*loc_diff), table_size, fmaxindex);
-  //   }
-  // }
+  if(abs(phase_diff) > 0.5f){
+    if (phase<m_last_phase)
+      phase_diff = (phase1 + 1.0f) - m_last_phase;
+    else
+      phase_diff = (phase1 - 1.0f) - m_last_phase;
+    phase_diff = phase_diff/m_oversampling_ratio;
+    for (int k = 0; k < m_oversampling_ratio; k++){
+      m_last_phase += phase_diff;
+      //Print("m_last_phase: %f, phase1: %f, phase_diff: %f, m_last_buf_loc: %f, buf_loc1: %f, loc_diff: %f\n", m_last_phase, phase1, phase_diff, m_last_buf_loc, buf_loc1, loc_diff);
+      osBuffer[k] = Perform(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, upsample_buf[k], table_size, fmaxindex);
+    }
+  }  
+  else {
+    phase_diff = phase_diff/m_oversampling_ratio;
+    for (int k = 0; k < m_oversampling_ratio; k++){
+      osBuffer[k] = Perform(table0, m_last_phase+(k*phase_diff), buf_divs, upsample_buf[k], table_size, fmaxindex);
+    }
+  }
 
-
-    // m_last_phase = phase1;
-    // m_last_buf_loc = buf_loc1;
+    m_last_phase = phase1;
+    m_last_buf_loc = buf_loc1;
 
     if (m_oversamplingIndex != 0)
       out = oversample.downsample();

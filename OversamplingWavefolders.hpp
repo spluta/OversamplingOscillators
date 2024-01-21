@@ -13,6 +13,7 @@ public:
   // Destructor
   ~BuchlaFoldOS();
   VariableOversampling<> oversample;
+  float m_oversampling_ratio;
 
 private:
   // Calc function
@@ -41,6 +42,7 @@ public:
   ~SergeFoldOS();
   VariableOversampling<> oversample;
   std::array<double, 1000> sergeWavetable;
+  float m_oversampling_ratio;
 
 private:
   // Calc function
@@ -88,6 +90,7 @@ public:
   float m_fbufnum;
   SndBuf* m_buf;
   BufUnit::BufUnit buf_unit;
+  float m_oversampling_ratio;
   
 
 private:
@@ -120,12 +123,14 @@ public:
   // Destructor
   ~OscOS();
   VariableOversampling<> oversample;
+  VariableOversampling<> upsample_buf_loc;
   float* m_inbuf;
   float m_fbufnum;
   SndBuf* m_buf;
   BufUnit::BufUnit buf_unit;
   float m_last_phase;
   float m_last_buf_loc;
+  float m_oversampling_ratio;
   
 
 private:
@@ -143,6 +148,7 @@ private:
   enum Outputs { Out1, NumOutputParams };
 
   float *osBuffer;
+  float *upsample_buf;
 
   int m_oversamplingIndex{0};
 };
