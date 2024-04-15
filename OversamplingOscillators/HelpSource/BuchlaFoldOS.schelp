@@ -1,7 +1,7 @@
 TITLE:: BuchlaFoldOS
 summary:: Oversampled Buchla 259 shaped Wavefolder
 categories:: UGens>Distortion
-related:: SergeFoldOS, SinOscOS, TriOS, SawOS, SquareOS, VarSawOS, PMOscOS, PM7OS, FM7OS
+related:: SergeFoldOS, ShaperOS, ShaperOS2
 
 DESCRIPTION::
 A wavefolder in the shape of the classic Buchla 259 wavefolder.  Derived from LINK::http://https://www.researchgate.net/publication/337591033_Virtual_Analog_Buchla_259_Wavefolder?enrichId=rgreq-24e9bcbf39508bb5b2598f920279b17c-XXX&enrichSource=Y292ZXJQYWdlOzMzNzU5MTAzMztBUzo4MzAwODY2MjY0MzA5NzdAMTU3NDkxOTQ4MjI1OQ%3D%3D&el=1_x_2&_esc=publicationCoverPdf##Virual Analog Buchla 259e Wavefolder ::
@@ -34,9 +34,9 @@ code::
 (
     {
         var sig = SinOsc.ar(40);
-        var amp = MouseX.kr(0,10).poll;
+        var amp = MouseX.kr(0,20).poll;
         var out = BuchlaFoldOS.ar(sig, amp, 1);
-        out.dup
+        out.dup*0.2
     }.scope
 )
 
@@ -57,7 +57,7 @@ code::
         var v5 = buchlaCell.(sig, sign, 4.08, 0.2673, 1.0907, 36.363);
         var v6 = sig*5;
         var out = ((v1+v2+v3*(-1)))+v4+v5+v6;
-        out/5
+        out/5*0.2
     }.scope
 )
 
@@ -67,7 +67,7 @@ code::
         var sig = SinOsc.ar(40);
         var amp = MouseX.kr(0,20).poll;
         var out = BuchlaFoldOS.ar(sig, amp, 1);
-        out.tanh.dup
+        out.tanh.dup*0.2
     }.scope
 )
 
@@ -81,7 +81,7 @@ code::
         var out = BuchlaFoldOS.ar(sig, amp, 4);
         out = LPF.ar(out, 4000);
 
-        out.tanh.dup
+        out.tanh.dup*0.2
     }.scope
 )
 
@@ -96,7 +96,7 @@ code::
 
         out = LPF.ar(out.tanh, 4000);
     
-        out.dup
+        out.dup*0.2
     }.scope
 )
 

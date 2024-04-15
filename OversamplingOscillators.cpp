@@ -56,11 +56,13 @@ namespace SawOS
     const float *phase = in(Phase);
     float *outbuf = out(Out1);
 
+    int over_sampling_ratio = oversample.getOversamplingRatio();
+
     for (int i = 0; i < nSamples; ++i)
     {
       float out;
-      for (int k = 0; k < oversample.getOversamplingRatio(); k++)
-        osBuffer[k] = saw.next(freq[i], phase[i], m_freqMul / oversample.getOversamplingRatio());
+      for (int k = 0; k < over_sampling_ratio; k++)
+        osBuffer[k] = saw.next(freq[i], phase[i], m_freqMul / over_sampling_ratio);
       if (m_oversamplingIndex != 0)
         out = oversample.downsample();
       else
@@ -103,11 +105,6 @@ namespace SinOscOS
     float out = saw.next(freq, phase + m_phaseOffset, m_freqMul); // saw returns a value between -1 and 1
     m_val = sin((out + 1) * pi);
     return m_val;
-    // return sinTable.lookup((out+1.f)*2048.f);
-    //  for(int k = 0; k<overSamplingRatio; k++)
-    //      osBuffer[k] = saw.next(freq, phase, m_freqMul/overSamplingRatio);
-    //  for (int i2 = 0; i2 < overSamplingRatio; i2++)
-    //    osBuffer[i2] = sinTable.lookup((osBuffer[i2]+1.f)*2048.f);
   }
 
   SinOSNext::~SinOSNext() {}
@@ -331,8 +328,6 @@ namespace FM7bOS
       for (int j = 0; j < 4; j++)
         mods[i][j] = in(4 + j + (i * 4));
     }
-
-    //Print("%i \n", m_oversamplingIndex);
 
     float freqs2[4];
 

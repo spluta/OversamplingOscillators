@@ -1,7 +1,7 @@
 TITLE:: OscOS
 summary:: Oversampled Wavetable Oscillator
-categories:: Undocumented classes, UGens>Undocumented
-related:: BuchlaFoldOS, ShaperOS
+categories:: UGens>Oscillator
+related:: BuchlaFoldOS, ShaperOS, OscOS3
 
 DESCRIPTION::
 An oversampled wavetable oscillator that interpolates between adjacent tables.

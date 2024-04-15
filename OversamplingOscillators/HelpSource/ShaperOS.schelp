@@ -9,7 +9,7 @@ Performs waveshaping on the input signal by indexing into the table. This
 classmethods::
 method::ar, kr
 
-argument::bufnum
+argument::buffer
 The number of a buffer containing the transfer function. This differs from Shaper in that ShaperOS takes standard buffers, not wavetable format buffers.
 
 argument::in
