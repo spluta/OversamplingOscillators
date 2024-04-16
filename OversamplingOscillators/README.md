@@ -1,11 +1,13 @@
 OversamplingOscillators (and BandLimited as well)
 Sam Pluta
 
+Optional Dependencies: BufFFT Plugins and SignalBox Quark
+
 Oversampling Oscillators use the VariableOversampling class from Jatin Chowdhury's ChowDSP library. That source is included with the download. 
 
 Standard Oversampling Oscillators include SinOscOS, TriOS, SawOS, SquareOS, VarSawOS, PMOscOS, PM7OS, FM7OS, FM7aOS, and FM7bOS.
 
-Oversampled WAVETABLE Oscillators include OscOS and OscOS3.
+Oversampled WAVETABLE Oscillators include OscOS and OscOS3. It is highly recommended to download the BufFFT library to be able to construct 3d wavetables for OscOS3 on the NRT server.
 
 Oversampled Waveshapers include ShaperOS, ShaperOS2, BuchlaFoldOS, and SergeFoldOS.
 

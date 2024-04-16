@@ -680,7 +680,7 @@ OscOS3 : PureUGen {
 		
 			out_file = Platform.defaultTempDir++"oscos3d_temp.wav";
 
-			nrt_server = Server(("nrt"++NRT_Server_ID.next).asSymbol,
+			nrt_server = Server(("oscOS_nrt"++1000.rand).asSymbol,
 				options: Server.local.options
 				.numOutputBusChannels_(num_bufs)
 				.numInputBusChannels_(num_bufs)
@@ -731,13 +731,13 @@ OscOS3 : PureUGen {
 			nrt_jam.recordNRT(
 				outputFilePath: out_file.standardizePath,
 				sampleRate: 44100,
-				headerFormat: "wav",
+				headerFormat: "WAV",
 				sampleFormat: "float",
 				options: nrt_server.options,
 				duration: signal_sf.numFrames/44100,
 				action: {
-						SoundFile.normalize("/Users/spluta1/Library/Application Support/SuperCollider/tmp/oscos3d_temp.wav", "/Users/spluta1/Library/Application Support/SuperCollider/tmp/oscos3d_temp2.wav",numFrames:signal_sf.numFrames, linkChannels: normalize_link_chans);
-						Buffer.read(server, "/Users/spluta1/Library/Application Support/SuperCollider/tmp/oscos3d_temp2.wav", action:{|buf| action.value(buf)});
+						SoundFile.normalize(Platform.defaultTempDir++"oscos3d_temp.wav", Platform.defaultTempDir++"oscos3d_temp2.wav",numFrames:signal_sf.numFrames, linkChannels: normalize_link_chans);
+						Buffer.read(server, Platform.defaultTempDir++"oscos3d_temp2.wav", action:{|buf| action.value(buf)});
 						"done".postln;
 				}
 			);

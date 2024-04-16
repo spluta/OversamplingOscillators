@@ -7,7 +7,7 @@ DESCRIPTION::
 
 OscOS3 is an oversampled 3D wavetable oscillator which takes a multichannel multi-wavetable buffer, allowing transformation between waveforms, rapid scanning of wavetables, and completely alias-free playback. 
 
-OscOS3 provides an internal class function, make_oscos3_mipmap, which will take any wariable waveform and convert it to a multi-octave filtered waveform with N wavetables per octave. The result is a multichannel buffer with each channel being an increasing filtered version of the original buffer. THIS FUNCTIONALITY REQUIRES THE Buf_FFT LIBRARY, which is used to quickly process the buffer in NRT mode.
+OscOS3 provides an internal class function, make_oscos3_mipmap, which will take any wariable waveform and convert it to a multi-octave filtered waveform with N wavetables per octave. The result is a multichannel buffer with each channel being an increasing filtered version of the original buffer. THIS FUNCTIONALITY REQUIRES THE BufFFT LIBRARY, which is used to quickly process the buffer in NRT mode.
 
 The oscillator uses an internal sawtooth wave to look into the oscillator wavetable. If provided an optional phase buffer (or variable phase buffer), the user can alter the shape of the lookup phasor over time. 
 
@@ -65,7 +65,7 @@ ARGUMENT:: add
 add
 
 METHOD:: make_oscos3_mipmap
-THIS REQUIRES THE Buf_FFT LIBRARY TO BE INSTALLED AS WELL. make_oscos3_mipmap creates a 3D buffer of variable wavetables for use with OscOS3. The user provides a single channel buffer with N wavetables loaded in it and the function produces a 3D buffer with N wavetables from left to right and M fft filtered versions of the buffer with increasingly fewer and fewer harmonics in each channel. The last channel should contain only a sine wave in each wavetable.
+THIS REQUIRES THE BufFFT LIBRARY TO BE INSTALLED AS WELL. make_oscos3_mipmap creates a 3D buffer of variable wavetables for use with OscOS3. The user provides a single channel buffer with N wavetables loaded in it and the function produces a 3D buffer with N wavetables from left to right and M fft filtered versions of the buffer with increasingly fewer and fewer harmonics in each channel. The last channel should contain only a sine wave in each wavetable.
 
 ARGUMENT:: server
 the local server
@@ -103,7 +103,9 @@ code::
         .addAll(Env([0,1,1,-1,-1,0],[0,1,0,1,0]).asSignal(~fft_size))
         .addAll(Env([0,1,-1,0],[1,0,1]).asSignal(~fft_size));
     
-    ~signal.write(Platform.defaultTempDir++"standard_waves.wav");
+    //Signal.write requires the SignalBox quark...which you can download with one click. Highly recommended.
+    //Otherwise this won't work
+    ~signal.write(Platform.defaultTempDir++"standard_waves.wav", "WAV");
 )
 
 //use make_oscos3_mipmap to create a 3D buffer of variable wavetables from the temporary file
