@@ -6,6 +6,8 @@
 #include "OversamplingOscillators.hpp"
 #include "SC_PlugIn.hpp"
 #include "SC_PlugIn.h"
+#include <iostream>
+#include <thread>
 
 static InterfaceTable *ft;
 
@@ -70,7 +72,135 @@ namespace SawOS
       outbuf[i] = out;
     }
   }
-}
+} //namespace SawOS
+
+namespace VariableRamp
+{
+
+  VariableRamp::VariableRamp()
+  {
+    m_sr = sampleRate();
+
+    float spread = pow(static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * in0(1), 2);
+    m_freq = in0(0) + spread;
+    m_phase = 0.f;
+    mCalcFunc = make_calc_function<VariableRamp, &VariableRamp::next>();
+    next(1);
+  }
+
+  VariableRamp::~VariableRamp() {}
+
+  void VariableRamp::next(int nSamples)
+  {
+    float freq_in = sc_clip(in0(0), 0.f, 2000.f);
+    float freqSpread_in = sc_clip(in0(1), 0.f, 4.f);
+
+    float* outs = out(0);
+
+    //std::cout<<m_freq<<" "<<freqSpread_in<<std::endl;
+
+    for (int i = 0; i < nSamples; ++i)
+    {
+      m_phase += m_freq/m_sr;
+      if (m_phase >= 1.f){
+        m_phase -= 1.f;
+        
+        float spread = static_cast<float>(rand()) / static_cast<float>(RAND_MAX)*2-1;
+        spread = pow(2.f, spread * freqSpread_in);
+        m_freq = freq_in * spread;
+      }
+      outs[i] = m_phase;
+    }
+  }
+} //namespace VariableRamp
+
+//wow - this is really inefficient
+namespace SawOS8
+{
+
+  SawOS8Object::SawOS8Object()
+  {
+  }
+
+  SawOS8Object::~SawOS8Object() {}
+
+  void SawOS8Object::setBuffers(int index_in, const float samplerate, const float buffersize, float freq_mul)
+  {
+    oversample.reset(samplerate);
+    over_sampling_index = index_in;
+    oversample.setOversamplingIndex(over_sampling_index);
+    over_sampling_ratio = oversample.getOversamplingRatio();
+    os_buffer = oversample.getOSBuffer();
+    outbuf_temp = (float *)malloc(buffersize * sizeof(float));
+    m_freqmul = freq_mul;
+  }
+
+  void SawOS8Object::doit(int nSamples, const float* freq, const float* phase)
+  {
+    for (int i = 0; i < nSamples; ++i)
+    {
+      float out;
+      for (int k = 0; k < over_sampling_ratio; k++)
+        os_buffer[k] = saw.next(freq[i], phase[i], m_freqmul / over_sampling_ratio);
+      
+      
+      if (over_sampling_index != 0)
+        out = oversample.downsample();
+      else
+        out = os_buffer[0];
+      outbuf_temp[i] = out;
+    }
+  }
+
+  SawOS8::SawOS8()
+  {
+    const float samplerate = (float) sampleRate();
+    const float buffersize = (float) bufferSize();
+
+    m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
+    for(int i = 0; i < 8; i++)
+      saw_objects[i].setBuffers(m_oversamplingIndex, samplerate, buffersize, m_freqMul);
+
+    mCalcFunc = make_calc_function<SawOS8, &SawOS8::next_aa>();
+    next_aa(1);
+  }
+  SawOS8::~SawOS8() {}
+
+  void SawOS8::next_aa(int nSamples)
+  {
+
+    const float *freq = in(Freq);
+    const float *phase = in(Phase);
+    float *outbuf = out(Out1);
+
+	  std::thread th0(&SawOS8Object::doit, &saw_objects[0], nSamples, freq, phase);
+    std::thread th1(&SawOS8Object::doit, &saw_objects[1], nSamples, freq, phase);
+    std::thread th2(&SawOS8Object::doit, &saw_objects[2], nSamples, freq, phase);
+    std::thread th3(&SawOS8Object::doit, &saw_objects[3], nSamples, freq, phase);
+    std::thread th4(&SawOS8Object::doit, &saw_objects[4], nSamples, freq, phase);
+    std::thread th5(&SawOS8Object::doit, &saw_objects[5], nSamples, freq, phase);
+    std::thread th6(&SawOS8Object::doit, &saw_objects[6], nSamples, freq, phase);
+    std::thread th7(&SawOS8Object::doit, &saw_objects[7], nSamples, freq, phase);
+
+    th0.join();
+    th1.join();
+    th2.join();
+    th3.join();
+    th4.join();
+    th5.join();
+    th6.join();
+    th7.join();
+
+    for (int i = 0; i < nSamples; ++i)
+    {
+      outbuf[i]=0.f;
+      for (int j=0; j<8; j++)
+        outbuf[i]+=saw_objects[j].outbuf_temp[i];
+    }
+  }
+} //namespace SawOS8
+
+
 
 namespace SinOscOS
 {
@@ -96,8 +226,7 @@ namespace SinOscOS
 
   SinOSNext::SinOSNext(float startPhase)
   {
-    // m_lastPhase = startPhase;
-    // m_phase = startPhase;
+
   }
 
   float SinOSNext::next(float freq, float phase, float m_freqMul)
@@ -144,6 +273,8 @@ namespace SinOscOS
     }
   }
 }
+
+
 
 namespace PMOscOS
 {
@@ -945,6 +1076,8 @@ PluginLoad(OversamplingOscillators)
 {
   ft = inTable;
   registerUnit<SawOS::SawOS>(ft, "SawOS", false);
+  //registerUnit<SawOS8::SawOS8>(ft, "SawOS8", false);
+
   registerUnit<SinOscOS::SinOscOS>(ft, "SinOscOS", false);
   registerUnit<TriOS::TriOS>(ft, "TriOS", false);
   registerUnit<VarSawOS::VarSawOS>(ft, "VarSawOS", false);
@@ -960,4 +1093,5 @@ PluginLoad(OversamplingOscillators)
   registerUnit<SquareBL::SquareBL>(ft, "SquareBL", false);
   registerUnit<TriBL::TriBL>(ft, "TriBL", false);
   registerUnit<ImpulseBL::ImpulseBL>(ft, "ImpulseBL", false);
+  registerUnit<VariableRamp::VariableRamp>(ft, "VariableRamp", false);
 }

@@ -13,6 +13,8 @@ set(CMAKE_SHARED_MODULE_SUFFIX ".scx")
 endif()
 
 add_library(SawOS MODULE OversamplingOscillators.cpp)
+add_library(VariableRamp MODULE OversamplingOscillators.cpp)
+#add_library(SawOS8 MODULE OversamplingOscillators.cpp)
 add_library(SinOscOS MODULE OversamplingOscillators.cpp)
 add_library(TriOS MODULE OversamplingOscillators.cpp)
 add_library(VarSawOS MODULE OversamplingOscillators.cpp)

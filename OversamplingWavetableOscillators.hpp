@@ -10,9 +10,9 @@ namespace Extras {
       SawOSNext();
       ~SawOSNext();
       float m_lastPhase {0.f};
-      float m_phase {0.f};
-      float next(float freq, float phaseIn, float m_freqMul);
-      void reset(float phaseIn);
+      double m_phase {0.0};
+      float next(float freq, float phaseIn, double m_freqMul);
+      void reset(double phaseIn);
     private:
 
   };
@@ -292,11 +292,11 @@ public:
 
   float m_freq_past{0.f};
   float i_phase{in0(Phase)};
-  float m_freqMul{2.0f/(float)sampleRate()};
+  double m_freqMul{2.0/sampleRate()};
 
   float m_last_phase;
   float m_last_buf_loc;
-  float m_oversampling_ratio;
+  double m_oversampling_ratio;
   float m_sync_trig;
   Extras::SawOSNext saw;
   Extras::ProcessFuncs process_funcs;

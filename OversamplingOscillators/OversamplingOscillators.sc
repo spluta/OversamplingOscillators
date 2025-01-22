@@ -1,4 +1,28 @@
+VariableRamp : UGen {
+	*ar { |freq=10, freqSpread=0, mul = 1, add = 0|
+		^this.multiNew('audio', freq, freqSpread).madd(mul, add);
+	}
+
+	checkInputs {
+		/* TODO */
+		^this.checkValidInputs;
+	}
+}
+
 SawOS : UGen {
+	*ar { |freq=440, phase=0, oversample=1, mul = 1, add = 0|
+		if(freq.rate!='audio'){freq = K2A.ar(freq)};
+		if(phase.rate!='audio'){phase = K2A.ar(phase)};
+		^this.multiNew('audio', freq, phase, oversample).madd(mul, add);
+	}
+
+	checkInputs {
+		/* TODO */
+		^this.checkValidInputs;
+	}
+}
+
+SawOS8 : UGen {
 	*ar { |freq=440, phase=0, oversample=1, mul = 1, add = 0|
 		if(freq.rate!='audio'){freq = K2A.ar(freq)};
 		if(phase.rate!='audio'){phase = K2A.ar(phase)};
@@ -633,7 +657,7 @@ OscOS3 : PureUGen {
 	*ar {
 		arg sound_buf, phase_buf=(-1), freq, phase, sync_trig, buf_divs, buf_loc, num_chans, chan_loc, phase_buf_divs, phase_buf_loc, oversample = 1, mul = 1.0, add = 0.0;
 		var out;
-		
+
 		if(freq.rate!='audio'){freq = K2A.ar(freq)};
 		if(phase.rate!='audio'){phase = K2A.ar(phase)};
 		if(sync_trig.rate!='audio'){sync_trig = K2A.ar(sync_trig)};
@@ -649,97 +673,103 @@ OscOS3 : PureUGen {
 	*fft_lp {arg fft_size, hiBin, filter_order;
 		var temp, temp2;
 		temp = (0..(fft_size/2));
-	
+
 		temp = temp.collect{|item| 1/(1+((item/(hiBin)**filter_order)))};
-	
+
 		temp2 = [0,0].addAll((1..(temp.size-2)).collect{|i|[temp[i],0]});
-	
+
 		^temp2.flat
 	}
 
 	*make_oscos3_mipmap {|server, path, fft_size=2048, filts_per_octave = 1, normalize_link_chans=false, action|
 		var nrt_jam, nrt_server, sig_bufs, filt_bufs, out_file, in_file, sf, main_filt_buf, main_sig_buf;
-		
+
 		var file = SoundFile(Platform.defaultTempDir++"main_sig_buf.wav");
 
-		var num_bufs = fft_size.log2(2)*filts_per_octave+1;
+		var num_bufs = 11*filts_per_octave+1;
 
-		//fill the filter array
-		var full_filt = num_bufs.asInteger.collect{|i| OscOS3.fft_lp(fft_size,(2**(11-(i/filts_per_octave))).asInteger,512).asArray};
-		
+		var log = fft_size.log2;
+		var full_filt = num_bufs.asInteger.collect{|i|
+			var power = (log -(i*log/num_bufs).postln).postln;
+			var high_bin = (2**power);
+			OscOS3.fft_lp(fft_size,high_bin.round.asInteger.postln,512).asArray
+		};
+
 		var file2 = SoundFile();
 
 		var signal_sf = SoundFile.openRead(path.absolutePath);
 
-			if(file2.openWrite(Platform.defaultTempDir++"main_filt_buf.wav", "WAV", "float", num_bufs, 44100)) {
-				file2.writeData(full_filt.flat.as(Signal));
-				file2.close;
-			} {
-				"Failed to open %".format(file2.path).warn;
-			};
-		
-			out_file = Platform.defaultTempDir++"oscos3d_temp.wav";
+		postf("num_bufs: % \n", num_bufs);
 
-			nrt_server = Server(("oscOS_nrt"++1000.rand).asSymbol,
-				options: Server.local.options
-				.numOutputBusChannels_(num_bufs)
-				.numInputBusChannels_(num_bufs)
-			);
-		
-			SynthDef("make_oscos3_buffer",{
-			
-				var chainC, chain = BufFFTTrigger(\sig_bufs.kr(0!num_bufs), 1, 0, 1);
-			
-				var demand = Dseries(0, fft_size);
-				var pos = Demand.kr(chain[0], 0, demandUGens: demand);
-			
-				var sound, filt_chain = BufFFTTrigger(\filt_bufs.kr(0!num_bufs), 1, 0, 1);
-		
-				chain = BufFFT_BufCopy(chain, \main_sig_buf.kr(0), pos.poll, \main_sig_buf.kr);
-				chain = BufFFT(chain, -1);
-		
-				filt_chain = BufFFT_BufCopy(filt_chain, \main_filt_buf.kr(), (0,fft_size..(fft_size*(num_bufs-1))).asInteger, 1);
-		
-				chain = PV_MagMul(chain, filt_chain);
-		
-				sound = BufIFFT(chain, -1);
-		
-				Out.ar(\out.kr(0), sound);
-		
-			}).load(nrt_server);
-		
-			main_filt_buf = Buffer.new(nrt_server, 0, 1);
-			main_sig_buf = Buffer.new(nrt_server, 0, 1);
-		
-			sig_bufs = Array.fill(num_bufs, {Buffer.new(nrt_server, fft_size, 1)});
-		
-			filt_bufs = Array.fill(num_bufs, {Buffer.new(nrt_server, fft_size, 1)});
-		
-			nrt_jam = Score.new();
-		
-			nrt_jam.add([0.0, main_filt_buf.allocReadMsg(Platform.defaultTempDir++"main_filt_buf.wav", 0, -1)]);
-		
-			nrt_jam.add([0.0, main_sig_buf.allocReadMsg(path, 0, -1)]);
-		
-			num_bufs.do{|i|
-				nrt_jam.add([0.0, sig_bufs[i].allocMsg]);
-				nrt_jam.add([0.0, filt_bufs[i].allocMsg]);
-			};
-		
-			nrt_jam.add([0.0, Synth.basicNew((\make_oscos3_buffer), nrt_server).newMsg(args: [\out, 0, \sig_bufs, sig_bufs.collect{|item| item.bufnum}, \filt_bufs, filt_bufs.collect{|item| item.bufnum}, \main_filt_buf, main_filt_buf.bufnum, \main_sig_buf, main_sig_buf.bufnum])]);
-		
-			nrt_jam.recordNRT(
-				outputFilePath: out_file.standardizePath,
-				sampleRate: 44100,
-				headerFormat: "WAV",
-				sampleFormat: "float",
-				options: nrt_server.options,
-				duration: signal_sf.numFrames/44100,
-				action: {
-						SoundFile.normalize(Platform.defaultTempDir++"oscos3d_temp.wav", Platform.defaultTempDir++"oscos3d_temp2.wav",numFrames:signal_sf.numFrames, linkChannels: normalize_link_chans);
-						Buffer.read(server, Platform.defaultTempDir++"oscos3d_temp2.wav", action:{|buf| action.value(buf)});
-						"done".postln;
-				}
-			);
-		}	
+		if(file2.openWrite(Platform.defaultTempDir++"main_filt_buf.wav", "WAV", "float", num_bufs, 44100)) {
+			file2.writeData(full_filt.flat.as(Signal));
+			file2.close;
+		} {
+			"Failed to open %".format(file2.path).warn;
+		};
+
+		out_file = Platform.defaultTempDir++"oscos3d_temp.wav";
+
+		nrt_server = Server(("oscOS_nrt"++1000.rand).asSymbol,
+			options: Server.local.options
+			.numOutputBusChannels_(num_bufs)
+			.numInputBusChannels_(num_bufs)
+		);
+
+		SynthDef("make_oscos3_buffer",{
+
+			var chainC, chain = BufFFTTrigger(\sig_bufs.kr(0!num_bufs), 1, 0, 1);
+
+			var demand = Dseries(0, fft_size);
+			var pos = Demand.kr(chain[0], 0, demandUGens: demand);
+
+			var sound, filt_chain = BufFFTTrigger(\filt_bufs.kr(0!num_bufs), 1, 0, 1);
+
+			chain = BufFFT_BufCopy(chain, \main_sig_buf.kr(0), pos.poll, \main_sig_buf.kr);
+			chain = BufFFT(chain, -1);
+
+			filt_chain = BufFFT_BufCopy(filt_chain, \main_filt_buf.kr(), (0,fft_size..(fft_size*(num_bufs-1))).asInteger, 1);
+
+			chain = PV_MagMul(chain, filt_chain);
+
+			sound = BufIFFT(chain, -1);
+
+			Out.ar(\out.kr(0), sound);
+
+		}).load(nrt_server);
+
+		main_filt_buf = Buffer.new(nrt_server, 0, 1);
+		main_sig_buf = Buffer.new(nrt_server, 0, 1);
+
+		sig_bufs = Array.fill(num_bufs, {Buffer.new(nrt_server, fft_size, 1)});
+
+		filt_bufs = Array.fill(num_bufs, {Buffer.new(nrt_server, fft_size, 1)});
+
+		nrt_jam = Score.new();
+
+		nrt_jam.add([0.0, main_filt_buf.allocReadMsg(Platform.defaultTempDir++"main_filt_buf.wav", 0, -1)]);
+
+		nrt_jam.add([0.0, main_sig_buf.allocReadMsg(path, 0, -1)]);
+
+		num_bufs.do{|i|
+			nrt_jam.add([0.0, sig_bufs[i].allocMsg]);
+			nrt_jam.add([0.0, filt_bufs[i].allocMsg]);
+		};
+
+		nrt_jam.add([0.0, Synth.basicNew((\make_oscos3_buffer), nrt_server).newMsg(args: [\out, 0, \sig_bufs, sig_bufs.collect{|item| item.bufnum}, \filt_bufs, filt_bufs.collect{|item| item.bufnum}, \main_filt_buf, main_filt_buf.bufnum, \main_sig_buf, main_sig_buf.bufnum])]);
+
+		nrt_jam.recordNRT(
+			outputFilePath: out_file.standardizePath,
+			sampleRate: 44100,
+			headerFormat: "WAV",
+			sampleFormat: "float",
+			options: nrt_server.options,
+			duration: signal_sf.numFrames/44100,
+			action: {
+				SoundFile.normalize(Platform.defaultTempDir++"oscos3d_temp.wav", Platform.defaultTempDir++"oscos3d_temp2.wav",numFrames:signal_sf.numFrames, linkChannels: normalize_link_chans);
+				Buffer.read(server, Platform.defaultTempDir++"oscos3d_temp2.wav", action:{|buf| action.value(buf)});
+				"done".postln;
+			}
+		);
+	}
 }

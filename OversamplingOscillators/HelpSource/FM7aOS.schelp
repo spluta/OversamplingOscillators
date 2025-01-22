@@ -67,24 +67,24 @@ code::
         var ctls, mods, chans, sound;
         ctls = [
             // freq, phase, amp
-            \freq0.ar(200),
-            \freq1.ar(200),
-            \freq2.ar(200),
+            \freq0.kr(200),
+            \freq1.kr(200),
+            \freq2.kr(200),
             0
         ];
         mods = [
-            [0, \mod0.ar(250), \mod1.ar(250), 0],
-            [\mod2.ar(250), 0, \mod3.ar(250), 0],
-            [\mod4.ar(250), \mod5.ar(250), 0, 0],
+            [0, \mod0.kr(250), \mod1.kr(250), 0],
+            [\mod2.kr(250), 0, \mod3.kr(250), 0],
+            [\mod4.kr(250), \mod5.kr(250), 0, 0],
             [0, 0, 0, 0]
         ];
         chans = [0,0];
-        sound = FM7aOS.ar(ctls, mods, [\osc0.ar(2),\osc1.ar(3),\osc2.ar(3)], 4).softclip;
-    
+        sound = FM7aOS.ar(ctls, mods, [\osc0.kr(2),\osc1.kr(3),\osc2.kr(3)], 4).softclip;
+
         sound[0].dup*0.1;
-    
+
     }.play;
-    
+
     var labels = ["freq0", "freq1", "freq2", "mod0", "mod1", "mod2", "mod3", "mod4", "mod5", "osc0", "osc1", "osc2"];
 
     var specs = [ControlSpec(0.01,4000, 'exp'), ControlSpec(0,3000), ControlSpec(0,3,'lin', 1)];
@@ -102,19 +102,19 @@ code::
         .addAll(labels[3..8].collect{|item, i| 
             Slider().action_{|sl| 
                 var num = specs[1].map(sl.value); 
-                synth.set(labels[i].asSymbol, num); 
+                synth.set(labels[i+3].asSymbol, num); 
                 boxes[i+3].value_(num)
             }})
         .addAll(labels[9..11].collect{|item, i| 
             Slider().action_{|sl| 
                 var num = specs[2].map(sl.value); 
-                synth.set(labels[i].asSymbol, specs[2].map(sl.value)); 
+                synth.set(labels[i+9].asSymbol, specs[2].map(sl.value)); 
                 boxes[i+9].value_(num)
             }});
 
     sliders.do{|slider| slider.valueAction_(1.0.rand)};
 
-    
+
     win = Window("");
     win.layout = 
     VLayout(
@@ -123,7 +123,7 @@ code::
         HLayout(*boxes)
     );
     win.front;
-    
+
     win.onClose_({synth.free});
 )
 

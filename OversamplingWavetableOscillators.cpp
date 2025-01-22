@@ -12,7 +12,7 @@ namespace Extras {
 
   SawOSNext::~SawOSNext() {}
 
-  float SawOSNext::next(float freq, float phaseIn, float m_freqMul)
+  float SawOSNext::next(float freq, float phaseIn, double m_freqMul)
   {
     float phaseDiff = (phaseIn - m_lastPhase);
     m_lastPhase = phaseIn;
@@ -24,11 +24,11 @@ namespace Extras {
     else if (m_phase <= -4.f)
       m_phase += 8.f;
 
-    float out = sc_wrap(m_phase, -1.f, 1.f);
+    float out = sc_wrap(m_phase, -1.0, 1.0);
     return out;
   }
 
-  void SawOSNext::reset(float phaseIn)
+  void SawOSNext::reset(double phaseIn)
   {
     m_lastPhase = phaseIn;
     m_phase = phaseIn;
@@ -586,7 +586,6 @@ namespace OscOS {
     float frac = findex - index;
     int ibuf_divs = (int)buf_divs;
     float out;
-    //if(ibuf_divs > 1){
 
     fbuf_loc = fbuf_loc*(buf_divs-1);
     int ibuf_loc = (int)fbuf_loc;
@@ -902,7 +901,6 @@ float OscOS3::next_os(const float* buf_data, const float* phase_buf_data, const 
     upsample_chan_loc.upsample(chan_loc);
     upsample_phase_buf_loc.upsample(phase_buf_loc);
 
-
     for (int k = 0; k < m_oversampling_ratio; k++){
       float saw_phase = saw.next(freq, phase, m_freqMul / m_oversampling_ratio)*0.5+0.5;
 
@@ -921,8 +919,11 @@ float OscOS3::next_os(const float* buf_data, const float* phase_buf_data, const 
         os_buffer[k] = chan0*(1.0f-frac) + chan1*frac;
       }
     } 
-
-    out = oversample.downsample();
+    if(m_oversampling_index>0){
+      out = oversample.downsample();
+    } else {
+      out = os_buffer[0];
+    }
     return out;
   }
 
@@ -993,7 +994,7 @@ float OscOS3::next_os(const float* buf_data, const float* phase_buf_data, const 
     for (int i = 0; i < n_samples; ++i)
     {
       if((m_sync_trig <= 0.f)&&(sync_trig[i] > 0.f)){
-        saw.reset(phase[i]);
+        saw.reset((double)phase[i]);
       };
       m_sync_trig = sync_trig[i];
       outbuf[i] = OscOS3::next_os(buf_data, phase_buf_data, freq[i], phase[i], buf_divs, buf_loc[i], num_chans, chan_loc[i], phase_buf_divs, phase_buf_loc[i], each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
