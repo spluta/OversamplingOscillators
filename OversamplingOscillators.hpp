@@ -56,6 +56,8 @@ class VariableRamp : public SCUnit {
     float m_phase {0.f};
     float m_freq {0.f};
     float m_sr;
+    float m_last_trig{0.f};
+    int m_reset_next{0};
     void next(int nSamples);
   private:
 

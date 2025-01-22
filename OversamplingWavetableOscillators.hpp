@@ -196,6 +196,7 @@ public:
   float m_last_phase;
   float m_last_buf_loc;
   float m_oversampling_ratio;
+  std::array<double, 4096>m_sinc_table;
   
   float Perform(const float* table0, float phase, float buf_divs, float buf_loc, int table_size, float fmaxindex);
 

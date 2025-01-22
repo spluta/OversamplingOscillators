@@ -548,12 +548,40 @@ namespace ShaperOS2 {
   }
 } // namespace ShaperOS2
 
+// float sinc(float x) {
+//   if (x == 0.0f) {
+//     return 1.0f;
+//   } else {
+//     return sinf(M_PI * x) / (M_PI * x);
+//   }
+// }
+
+// void generateSincTable(float* table, int size, int ripples) {
+//   float step = 2.0f * ripples / (size - 1);
+//   for (int i = 0; i < size; ++i) {
+//     float x = i * step - ripples;
+//     table[i] = sinc(x);
+//   }
+// }
+
+// #include <cmath>
+// #include <vector>
+
+// std::vector<float> generateKaiserWindow(int size, float beta) {
+//   std::vector<float> window(size);
+//   float denom = std::cyl_bessel_i(0, beta);
+//   for (int i = 0; i < size; ++i) {
+//     float x = 2.0f * i / (size - 1) - 1.0f;
+//     window[i] = std::cyl_bessel_i(0, beta * std::sqrt(1 - x * x)) / denom;
+//   }
+//   return window;
+// }
+
 namespace OscOS {
 
   OscOS::OscOS()
   {
     const float samplerate = (float) sampleRate();
-
 
     m_fbufnum = std::numeric_limits<float>::quiet_NaN();
     m_buf = nullptr;
@@ -573,6 +601,11 @@ namespace OscOS {
     upsample_buf = upsample_buf_loc.getOSBuffer();
 
     m_oversampling_ratio = oversample.getOversamplingRatio();
+
+    const int tableSize = 4096;
+    const int ripples = 8;
+
+    m_sinc_table = get_sinc_window();
 
     mCalcFunc = make_calc_function<OscOS, &OscOS::next_aa>();
     next_aa(1);

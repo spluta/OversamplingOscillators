@@ -85,31 +85,39 @@ namespace VariableRamp
     m_freq = in0(0) + spread;
     m_phase = 0.f;
     mCalcFunc = make_calc_function<VariableRamp, &VariableRamp::next>();
-    next(1);
+    //next(1);
   }
 
   VariableRamp::~VariableRamp() {}
 
   void VariableRamp::next(int nSamples)
   {
-    float freq_in = sc_clip(in0(0), 0.f, 2000.f);
-    float freqSpread_in = sc_clip(in0(1), 0.f, 4.f);
+    // float freq_in = sc_clip(in0(0), 0.f, 2000.f);
+    // float freqSpread_in = sc_clip(in0(1), 0.f, 4.f);
+    const float* freq_in = in(0);
+    const float* trig_reset = in(1);
 
     float* outs = out(0);
 
-    //std::cout<<m_freq<<" "<<freqSpread_in<<std::endl;
-
     for (int i = 0; i < nSamples; ++i)
     {
-      m_phase += m_freq/m_sr;
-      if (m_phase >= 1.f){
+      if( m_last_trig<=0.f && trig_reset[i]>0.f )
+        m_phase = 0.f;
+      m_last_trig = trig_reset[i];
+
+      if(m_reset_next==1){
         m_phase -= 1.f;
-        
-        float spread = static_cast<float>(rand()) / static_cast<float>(RAND_MAX)*2-1;
-        spread = pow(2.f, spread * freqSpread_in);
-        m_freq = freq_in * spread;
+        m_freq = freq_in[i];
+        m_reset_next = 0;
       }
+
       outs[i] = m_phase;
+
+      m_phase += m_freq/m_sr;
+      
+      if (m_phase >= 1.f){
+        m_reset_next = 1;
+      } 
     }
   }
 } //namespace VariableRamp

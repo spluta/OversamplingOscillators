@@ -1,6 +1,8 @@
 VariableRamp : UGen {
-	*ar { |freq=10, freqSpread=0, mul = 1, add = 0|
-		^this.multiNew('audio', freq, freqSpread).madd(mul, add);
+	*ar { |freq=10, trig_reset=0, mul = 1, add = 0|
+		if(freq.rate!='audio'){freq = K2A.ar(freq)};
+		if(trig_reset.rate!='audio'){trig_reset = K2A.ar(trig_reset)};
+		^this.multiNew('audio', freq, trig_reset).madd(mul, add);
 	}
 
 	checkInputs {
