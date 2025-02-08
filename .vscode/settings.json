@@ -85,6 +85,11 @@
         "bit": "cpp",
         "compare": "cpp",
         "concepts": "cpp",
-        "type_traits": "cpp"
+        "type_traits": "cpp",
+        "execution": "cpp",
+        "forward_list": "cpp",
+        "print": "cpp",
+        "span": "cpp",
+        "valarray": "cpp"
     }
 }

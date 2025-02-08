@@ -52,10 +52,10 @@ class VariableRamp : public SCUnit {
   public:
     VariableRamp();
     ~VariableRamp();
-    float m_lastPhase {0.f};
-    float m_phase {0.f};
-    float m_freq {0.f};
-    float m_sr;
+    double m_lastPhase {0.0};
+    double m_phase {0.0};
+    double m_freq {0.0};
+    double m_sr_recip;
     float m_last_trig{0.f};
     int m_reset_next{0};
     void next(int nSamples);

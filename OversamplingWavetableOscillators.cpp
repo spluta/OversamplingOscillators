@@ -2,6 +2,7 @@
 #include "SC_PlugIn.hpp"
 #include "SC_PlugIn.h"
 #include "sergeWavetable.h"
+#include <iostream>
 
 static InterfaceTable *ft;
 
@@ -36,6 +37,10 @@ namespace Extras {
 
   ProcessFuncs::ProcessFuncs()
   {
+    m_sinc_table = get_sinc_window();
+    sinc_points = {0, 512, 1024, 1536, 2048, 2560, 3072, 3584};//(int*)RTAlloc(mWorld, 8.0 * sizeof(int));
+    // for(int i = 0; i<8; i++)
+    //   sinc_points[i]=i*512;
   }
 
   ProcessFuncs::~ProcessFuncs() {}
@@ -87,19 +92,19 @@ namespace Extras {
     return ramp;
   };
 
-  float ProcessFuncs::get_out(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc) {
-    //now that we have the ramp, use it to get the value from the buffer
-
-    float findex = (ramp*fmaxindex); 
-    int index = (int)findex;
-    float frac = findex - index;
-    int ibuf_divs = (int)buf_divs;
+  float ProcessFuncs::get_out_no_interp(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc) {
     
-    float out;
-
     buf_loc = buf_loc*(float)(buf_divs-1);
     int ibuf_loc = (int)buf_loc;
 
+    float findex = (ramp*fmaxindex);
+    int index = (int)findex;
+    float frac = findex - index;
+    int ibuf_divs = (int)buf_divs;
+    float out;
+
+    float frac_loc = buf_loc - ibuf_loc;
+    
     if(ibuf_loc == ibuf_divs-1)
     {
       int zero_index = (ibuf_loc*each_table_size);
@@ -110,8 +115,6 @@ namespace Extras {
       else
         out = buf_data[loc]*(1.0f-frac) + buf_data[loc+num_chans]*frac;
     } else {
-
-      float frac_loc = buf_loc - ibuf_loc;
 
       int final_index = index + (ibuf_loc*each_table_size);
       int final_index2 = final_index + each_table_size;
@@ -133,6 +136,52 @@ namespace Extras {
     }
 
     return out;
+
+  }
+
+  float ProcessFuncs::get_out(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc) {
+    //now that we have the ramp, use it to get the value from the buffer
+
+    //int loc = (index+zero_index)*num_chans + chan_loc;
+
+    buf_loc = buf_loc*(float)(buf_divs-1);
+    int ibuf_loc = (int)buf_loc;
+
+    float findex = (ramp*fmaxindex);
+    int index = (int)findex;
+    float frac = findex - index;
+    int ibuf_divs = (int)buf_divs;
+    float out;
+
+    float frac_loc = buf_loc - ibuf_loc;
+
+    //get the table0
+    int sinc_offset = (int)(frac*max_sinc_offset);
+
+    float sinc_sum0 = get_sinc_sum(buf_data, each_table_size, index, ibuf_loc, sinc_offset, num_chans, chan_loc);
+
+    float sinc_sum1 = 0.0f;
+    if(ibuf_loc != ibuf_divs-1)
+    {
+      sinc_sum1 = get_sinc_sum(buf_data, each_table_size, index, ibuf_loc+1, sinc_offset, num_chans, chan_loc);
+    }
+    out = sinc_sum0*(1.0f-frac_loc) + sinc_sum1*frac_loc;
+    return out;
+  }
+
+  float ProcessFuncs::get_sinc_sum(const float* table, int table_size, int index, int ibuf_loc, int sinc_offset, int num_chans, int chan_loc){
+    float sinc_sum=0.f;
+
+    int zero_index = (ibuf_loc*table_size);
+    
+    for(int sp=0; sp<sinc_len; sp++){
+
+      //find the points in the interleaved table
+      int loc_point=(sc_wrap(index+(sp-sinc_half_len), 0, table_size-1)+zero_index)*num_chans+chan_loc;
+
+      sinc_sum += m_sinc_table[sinc_points[sp]+sinc_offset]*table[loc_point];
+    }
+    return sinc_sum;
   }
 }
 
@@ -298,8 +347,8 @@ namespace BufUnit {
   bool BufUnit::GetTable(World* world, float fbufnum, int inNumSamples, const SndBuf*& buf, const float*& bufData,
                                int& tableSize) {
     
-    if (fbufnum < 0.f) {                                                                                               \
-        fbufnum = 0.f;                                                                                                 \
+    if (fbufnum < 0.f) {                                                                      
+        fbufnum = 0.f;                                                                                   
     }    
 
     if (fbufnum != m_fbufnum) {
@@ -506,7 +555,7 @@ namespace ShaperOS2 {
     for (int k = 0; k < m_oversampling_ratio; k++){
       //osBuffer[k] = Perform(table0, upsample_input_ptr[k], buf_divs, upsample_buf_ptr[k], table_size, fmaxindex);
       float val = sc_clip(upsample_input_ptr[k],0.0,1.0);
-      osBuffer[k] = process_funcs.get_out(table0, val, buf_divs, buf_loc, each_table_size, fmaxindex, 1, 0); //only one channel
+      osBuffer[k] = process_funcs.get_out_no_interp(table0, val, buf_divs, buf_loc, each_table_size, fmaxindex, 1, 0); //only one channel
     }
 
     out = oversample.downsample();
@@ -605,7 +654,10 @@ namespace OscOS {
     const int tableSize = 4096;
     const int ripples = 8;
 
-    m_sinc_table = get_sinc_window();
+    // m_sinc_table = get_sinc_window();
+    // sinc_points = (int*)RTAlloc(mWorld, 8.0 * sizeof(int));
+    // for(int i = 0; i<8; i++)
+    //   sinc_points[i]=i*512;
 
     mCalcFunc = make_calc_function<OscOS, &OscOS::next_aa>();
     next_aa(1);
@@ -614,42 +666,29 @@ namespace OscOS {
 
  float OscOS::Perform(const float* table0, float phase, float buf_divs, float fbuf_loc, int table_size, float fmaxindex) {
 
-    float findex = (phase*fmaxindex);
-    int index = (int)findex;
-    float frac = findex - index;
-    int ibuf_divs = (int)buf_divs;
-    float out;
+  float findex = (phase*fmaxindex);
+  int index = (int)findex;
+  float frac = findex - index;
+  int ibuf_divs = (int)buf_divs;
+  float out;
 
-    fbuf_loc = fbuf_loc*(buf_divs-1);
-    int ibuf_loc = (int)fbuf_loc;
+  //get the float and int locations in the buffer table
+  fbuf_loc = fbuf_loc*(buf_divs-1);
+  int ibuf_loc = (int)fbuf_loc;
 
-      if(ibuf_loc == ibuf_divs-1)
-      {
-        int loc = index+(ibuf_loc*table_size);
-        if (index==table_size-1)
-          out = table0[loc]*(1.0f-frac) + table0[ibuf_loc*table_size]*frac;
-        else
-          out = table0[loc]*(1.0f-frac) + table0[loc+1]*frac;
-      } else {
+  float frac_loc = fbuf_loc - ibuf_loc;
 
-        float frac_loc = fbuf_loc - ibuf_loc;
+  //get the table0
+  int sinc_offset = (int)(frac*process_funcs.max_sinc_offset);
 
-        int final_index = index + (ibuf_loc*table_size);
-        int final_index2 = final_index + table_size;
+  float sinc_sum0 = process_funcs.get_sinc_sum(table0, table_size, index, ibuf_loc, sinc_offset, 1, 0);
 
-        float out1, out2;
-        if (index==table_size-1)
-        {
-          out1 = table0[final_index]*(1.0f-frac) + table0[ibuf_loc*table_size]*frac;
-          out2 = table0[final_index2]*(1.0f-frac) + table0[(ibuf_loc+1)*table_size]*frac;
-        } else {
-          out1 = table0[final_index]*(1.0f-frac) + table0[final_index+1]*frac;
-          out2 = table0[final_index2]*(1.0f-frac) + table0[final_index2+1]*frac;
-        }
-
-        out = out1*(1.0f-frac_loc) + out2*frac_loc;
-      }
-
+  float sinc_sum1 = 0.0f;
+  if(ibuf_loc != ibuf_divs-1)
+  {
+    sinc_sum1 = process_funcs.get_sinc_sum(table0, table_size, index, ibuf_loc+1, sinc_offset, 1, 0);
+  }
+  out = sinc_sum0*(1.0f-frac_loc) + sinc_sum1*frac_loc;
   return out;
 }
 
@@ -658,11 +697,10 @@ namespace OscOS {
     float out;
     
     float phase1 = sc_clip(phase, 0.f, 1.0f);
-    float buf_loc1 = sc_clip(buf_loc, 0.f, 1.0f);
 
     float phase_diff = (phase1 - m_last_phase);
 
-    upsample_buf_loc.upsample(buf_loc1);
+    upsample_buf_loc.upsample(buf_loc);
 
   //the phase_diff should not be more than 0.5 except when the phase crosses from 1 to 0 or vice versa
   //even at the nyquist frequency, the phase_diff should not be more than 0.5
@@ -674,18 +712,22 @@ namespace OscOS {
     phase_diff = phase_diff/m_oversampling_ratio;
     for (int k = 0; k < m_oversampling_ratio; k++){
       m_last_phase += phase_diff;
-      osBuffer[k] = Perform(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, upsample_buf[k], table_size, fmaxindex);
+
+      osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, sc_clip(upsample_buf[k], 0.f, 1.f), table_size, fmaxindex, 1, 0);
+
+      //osBuffer[k] = Perform(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, sc_clip(upsample_buf[k], 0.f, 1.f), table_size, fmaxindex);
     }
   }  
   else {
     phase_diff = phase_diff/m_oversampling_ratio;
     for (int k = 0; k < m_oversampling_ratio; k++){
-      osBuffer[k] = Perform(table0, m_last_phase+(k*phase_diff), buf_divs, upsample_buf[k], table_size, fmaxindex);
+      osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, sc_clip(upsample_buf[k], 0.f, 1.f), table_size, fmaxindex, 1, 0);
+      //osBuffer[k] = Perform(table0, m_last_phase+(k*phase_diff), buf_divs, sc_clip(upsample_buf[k], 0.f, 1.f), table_size, fmaxindex);
     }
   }
 
     m_last_phase = phase1;
-    m_last_buf_loc = buf_loc1;
+    m_last_buf_loc = buf_loc;
 
     if (m_oversamplingIndex != 0)
       out = oversample.downsample();
@@ -898,7 +940,6 @@ OscOS3::OscOS3()
 
   OscOS3::~OscOS3() {}
 
-
 //Perform(buf_data, phase_buf_data, saw_phase, buf_divs, upsample_buf_loc[k], phase_buf_divs, upsample_phase_buf_loc[k], table_size, fmaxindex);
  float OscOS3::Perform(const float* buf_data, const float* phase_buf_data, float phase, float buf_divs, float buf_loc, float num_chans, float chan_loc, float phase_buf_divs, float phase_buf_loc, int each_table_size, float fmaxindex, int phase_table_size, float phase_fmaxindex) 
  {
@@ -920,13 +961,9 @@ float OscOS3::next_os(const float* buf_data, const float* phase_buf_data, const 
   {
     float out;
 
-    //Print("next_os\n");
-
     buf_loc = sc_clip(buf_loc, 0.f, 1.0f);
     chan_loc = sc_clip(chan_loc, 0.f, 1.0f-1.f/num_chans);
     phase_buf_loc = sc_clip(phase_buf_loc, 0.f, 1.0f);
-
-    //Print("buf_loc: %f, chan_loc: %f, phase_buf_loc: %f\n", buf_loc, chan_loc, phase_buf_loc);
 
     //upsample the inputs
 
@@ -1047,48 +1084,3 @@ PluginLoad(OversamplingOscillators)
   registerUnit<OscOS3::OscOS3>(ft, "OscOS3", false);
 }
 
-/*
-void fillTables(WaveTableOsc *osc, double *freqWaveRe, double *freqWaveIm, int numSamples) {
-    int idx;
-    
-    // zero DC offset and Nyquist
-    freqWaveRe[0] = freqWaveIm[0] = 0.0;
-    freqWaveRe[numSamples >> 1] = freqWaveIm[numSamples >> 1] = 0.0;
-    
-    // determine maxHarmonic, the highest non-zero harmonic in the wave
-    int maxHarmonic = numSamples >> 1;
-    const double minVal = 0.000001; // -120 dB
-    while ((fabs(freqWaveRe[maxHarmonic]) + fabs(freqWaveIm[maxHarmonic]) < minVal)
-        && maxHarmonic) --maxHarmonic;
-
-    // calculate topFreq for the initial wavetable
-    // maximum non-aliasing playback rate is 1 / (2 * maxHarmonic), but we allow
-    // aliasing up to the point where the aliased harmonic would meet the next
-    // octave table, which is an additional 1/3
-    double topFreq = 2.0 / 3.0 / maxHarmonic;
-    
-    // for subsquent tables, double topFreq and remove upper half of harmonics
-    double *ar = new double [numSamples];
-    double *ai = new double [numSamples];
-    double scale = 0.0;
-    while (maxHarmonic) {
-        // fill the table in with the needed harmonics
-        for (idx = 0; idx < numSamples; idx++)
-            ar[idx] = ai[idx] = 0.0;
-        for (idx = 1; idx <= maxHarmonic; idx++) {
-            ar[idx] = freqWaveRe[idx];
-            ai[idx] = freqWaveIm[idx];
-            ar[numSamples - idx] = freqWaveRe[numSamples - idx];
-            ai[numSamples - idx] = freqWaveIm[numSamples - idx];
-        }
-        
-        // make the wavetable
-        scale = makeWaveTable(osc, numSamples, ar, ai, scale, topFreq);
-
-        // prepare for next table
-        topFreq *= 2;
-        maxHarmonic >>= 1;
-    }
-}
-
-*/

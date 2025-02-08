@@ -79,13 +79,12 @@ namespace VariableRamp
 
   VariableRamp::VariableRamp()
   {
-    m_sr = sampleRate();
+    m_sr_recip = 1.0/sampleRate();
 
-    float spread = pow(static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * in0(1), 2);
-    m_freq = in0(0) + spread;
+    m_freq = (double)in0(0);
     m_phase = 0.f;
     mCalcFunc = make_calc_function<VariableRamp, &VariableRamp::next>();
-    //next(1);
+    out(0)[0] = 0.f;
   }
 
   VariableRamp::~VariableRamp() {}
@@ -102,20 +101,20 @@ namespace VariableRamp
     for (int i = 0; i < nSamples; ++i)
     {
       if( m_last_trig<=0.f && trig_reset[i]>0.f )
-        m_phase = 0.f;
+        m_phase = 0.0;
       m_last_trig = trig_reset[i];
 
       if(m_reset_next==1){
-        m_phase -= 1.f;
+        m_phase -= 1.0;
         m_freq = freq_in[i];
         m_reset_next = 0;
       }
 
-      outs[i] = m_phase;
+      outs[i] = (float)m_phase;
 
-      m_phase += m_freq/m_sr;
+      m_phase += m_freq*m_sr_recip;
       
-      if (m_phase >= 1.f){
+      if (m_phase >= 1.0){
         m_reset_next = 1;
       } 
     }

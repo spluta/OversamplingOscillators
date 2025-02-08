@@ -23,6 +23,16 @@ namespace Extras {
       ~ProcessFuncs();
       float get_phase(const float* phase_buf_data, float phase, float phase_buf_divs, float phase_buf_loc, int phase_table_size, float phase_fmaxindex);
       float get_out(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc);
+      float get_out_no_interp(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc);
+      float get_sinc_sum(const float* table, int table_size, int index, int ibuf_loc, int sinc_offset, int num_chans, int chan_loc);
+
+      std::array<int, 8> sinc_points;
+      int sinc_len{8};
+      int sinc_half_len{4};
+      int sinc_table_size{4096};
+      float max_sinc_offset{512.f};
+      std::array<double, 4096>m_sinc_table;
+    
     private:
 
   };
@@ -196,10 +206,11 @@ public:
   float m_last_phase;
   float m_last_buf_loc;
   float m_oversampling_ratio;
-  std::array<double, 4096>m_sinc_table;
+
+  Extras::ProcessFuncs process_funcs;  
   
   float Perform(const float* table0, float phase, float buf_divs, float buf_loc, int table_size, float fmaxindex);
-
+  //float get_sinc_sum(const float* table, int table_size, int index, int ibuf_loc, int sinc_offset, int num_chans, int chan_loc);
 
 private:
   // Calc function
