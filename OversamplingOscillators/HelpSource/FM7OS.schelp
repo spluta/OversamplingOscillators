@@ -66,7 +66,7 @@ code::
 }.scope;
 )
 
-//probably a terribel design decision, but I can't help myself. the feedback modulator uses PM, not FM, so numbers there should be between 0 and 1
+//probably a terrible design decision, but I can't help myself. the feedback modulator uses PM, not FM, so numbers there should be between 0 and 1
 (
 {
     var ctls, mods, chans;

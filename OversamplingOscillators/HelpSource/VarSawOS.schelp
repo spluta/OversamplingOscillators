@@ -50,7 +50,7 @@ code::
 //phase modulation works
 {VarSawOS.ar(0, LFSaw.ar(400))}.plot;
 
-//really for interesting waves
+//really great for interesting waves
 {VarSawOS.ar(200, SinOsc.ar(400)*Line.ar(0,2,10), 0.5, 2, 0.1)}.scope;
 
 //modulate the width

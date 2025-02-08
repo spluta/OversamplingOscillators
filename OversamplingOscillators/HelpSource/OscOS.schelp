@@ -47,10 +47,10 @@ EXAMPLES::
 code::
 //fill a buffer with 4 different waveforms
 (
-    t = Signal.sineFill(512, [1], [0]);
-    u = Signal.sineFill(512, 1.0/(1..56));
-    w = Signal.sineFill(512, 1.0/(1..56)*([1,0]!28).flatten);
-    x = Signal.sineFill(512, 1.0/((1..56)**2)*([1,0,-1,0]!14).flatten);
+    t = Signal.sineFill(2048, [1], [0]);
+    u = Signal.sineFill(2048, 1.0/(1..56));
+    w = Signal.sineFill(2048, 1.0/(1..56)*([1,0]!28).flatten);
+    x = Signal.sineFill(2048, 1.0/((1..56)**2)*([1,0,-1,0]!14).flatten);
     v = t.addAll(u).addAll(w).addAll(x);
 
     b = Buffer.loadCollection(s, v);
@@ -79,8 +79,8 @@ b.plot;
 //modulate the buffer location very quickly
 
 (
-    t = Signal.sineFill(512, [1], [0]);
-    u = Env([0,1,-1,0],[0.25,0.5,0.25]).asSignal(512);
+    t = Signal.sineFill(1024, [1], [0]);
+    u = Env([0,1,-1,0],[0.25,0.5,0.25]).asSignal(1024);
     v = t.addAll(u);
 
     b = Buffer.loadCollection(s, v);
@@ -92,13 +92,13 @@ b.plot;
 (
     {
         var phase = LFSaw.ar(400).range(0,1);
-        var osc = OscOS.ar(b,phase,4,SinOsc.ar(MouseY.kr(1,2000)).range(0,1));
+        var osc = OscOS.ar(b,phase,2,SinOsc.ar(MouseY.kr(1,20)).range(0,1));
         osc.dup*0.1
     }.scope
 )
 
 //using a phase input allows for fun wavetable warping
-//(at high frequencies and extreme warping, the internal algorithm with distort)
+//(at high frequencies and extreme warping, the internal algorithm will distort)
 (
     {
         var phase = LFSaw.ar(100,1);
@@ -108,7 +108,7 @@ b.plot;
             phase.bilin(midpoint.neg,-1,0,-0.5,-1,0),
             phase.bilin(midpoint,0,1,0.5,0,1)
         ])*0.5+0.5;
-        osc = OscOS.ar(b,phase,4,MouseX.kr,4,0.1);
+        osc = OscOS.ar(b,phase,2,MouseX.kr,4,0.1);
         osc.dup
     }.scope
 )
@@ -122,7 +122,7 @@ b.plot;
             phase.bilin(midpoint.neg,-1,0,(1-midpoint).neg,-1,0),
             phase.bilin(midpoint,0,1,1-midpoint,0,1)
         ])*0.5+0.5;
-        osc = OscOS.ar(b,phase,4,MouseX.kr,4,0.1);
+        osc = OscOS.ar(b,phase,2,MouseX.kr,4,0.1);
         osc.dup
     }.scope
 )
@@ -132,7 +132,7 @@ b.plot;
     {
         var fm = SinOsc.ar(100,-0.1,MouseY.kr(0,5000));
         var phase = LFSaw.ar(50+fm).range(0,1);
-        var osc = OscOS.ar(b,phase,4,MouseX.kr,4, 0.1);
+        var osc = OscOS.ar(b,phase,2,MouseX.kr,4, 0.1);
         osc.dup
     }.scope
 )
@@ -144,7 +144,7 @@ c = Buffer.read(s, "/Users/spluta1/Music/Vital/Glorkglunk/Wavetables/Granular Up
     {
         var phase = LFSaw.ar(53.midicps/4).range(0,1);
         var osc = OscOS.ar(c,phase,108,MouseX.kr.poll);
-        osc.dup
+        osc.dup*0.2
     }.scope
 )
 
