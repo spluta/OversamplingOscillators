@@ -31,7 +31,7 @@ namespace Extras {
       int sinc_half_len{4};
       int sinc_table_size{4096};
       float max_sinc_offset{512.f};
-      std::array<double, 4096>m_sinc_table;
+      std::array<float, 4096>m_sinc_table;
     
     private:
 
