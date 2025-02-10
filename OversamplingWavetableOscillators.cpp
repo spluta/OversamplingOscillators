@@ -161,7 +161,7 @@ namespace Extras {
     float sinc_sum0 = get_sinc_sum(buf_data, each_table_size, index, ibuf_loc, sinc_offset, num_chans, chan_loc);
 
     float sinc_sum1 = 0.0f;
-    if(ibuf_loc != ibuf_divs-1)
+    if(ibuf_loc < ibuf_divs-1)
     {
       sinc_sum1 = get_sinc_sum(buf_data, each_table_size, index, ibuf_loc+1, sinc_offset, num_chans, chan_loc);
     }
@@ -473,7 +473,6 @@ namespace ShaperOS2 {
     m_buf = nullptr;
 
     m_last_phase = 0.f;
-    m_last_buf_loc = 0.f;
 
     buf_unit = BufUnit::BufUnit();
 
@@ -496,47 +495,6 @@ namespace ShaperOS2 {
     next_aa(1);
   } 
   ShaperOS2::~ShaperOS2() {}
-
-//  float ShaperOS2::Perform(const float* table0, float input, float buf_divs, float fbuf_loc, int table_size, float fmaxindex) {
-
-//     float findex = (input*fmaxindex);
-//     int index = (int)findex;
-//     float frac = findex - index;
-//     int ibuf_divs = (int)buf_divs;
-//     float out;
-
-//     fbuf_loc = fbuf_loc*(buf_divs-1);
-//     int ibuf_loc = (int)fbuf_loc;
-
-//     if(ibuf_loc == ibuf_divs-1)
-//     {
-//       int loc = index+(ibuf_loc*table_size);
-//       if (index==table_size-1)
-//         out = table0[loc];
-//       else
-//         out = table0[loc]*(1.0f-frac) + (table0[loc+1]*frac);
-//     } else {
-
-//       float frac_loc = fbuf_loc - ibuf_loc;
-
-//       int final_index = index + (ibuf_loc*table_size);
-//       int final_index2 = final_index + table_size;
-
-//       float out1, out2;
-//       if (index==table_size-1)
-//       {
-//         out1 = table0[final_index]*(1.0f-frac) + table0[ibuf_loc*table_size]*frac;
-//         out2 = table0[final_index2]*(1.0f-frac) + table0[(ibuf_loc+1)*table_size]*frac;
-//       } else {
-//         out1 = table0[final_index]*(1.0f-frac) + table0[final_index+1]*frac;
-//         out2 = table0[final_index2]*(1.0f-frac) + table0[final_index2+1]*frac;
-//       }
-
-//       out = out1*(1.0f-frac_loc) + out2*frac_loc;
-//     }
-
-//   return out;
-// }
 
   float ShaperOS2::next_os(const float* table0, float input, float buf_divs, float buf_loc, int each_table_size, float fmaxindex)
   {
@@ -636,7 +594,6 @@ namespace OscOS {
     m_buf = nullptr;
 
     m_last_phase = 0.f;
-    m_last_buf_loc = 0.f;
 
     buf_unit = BufUnit::BufUnit();
 
@@ -653,11 +610,6 @@ namespace OscOS {
 
     const int tableSize = 4096;
     const int ripples = 8;
-
-    // m_sinc_table = get_sinc_window();
-    // sinc_points = (int*)RTAlloc(mWorld, 8.0 * sizeof(int));
-    // for(int i = 0; i<8; i++)
-    //   sinc_points[i]=i*512;
 
     mCalcFunc = make_calc_function<OscOS, &OscOS::next_aa>();
     next_aa(1);
@@ -684,7 +636,7 @@ namespace OscOS {
   float sinc_sum0 = process_funcs.get_sinc_sum(table0, table_size, index, ibuf_loc, sinc_offset, 1, 0);
 
   float sinc_sum1 = 0.0f;
-  if(ibuf_loc != ibuf_divs-1)
+  if(ibuf_loc < ibuf_divs-1)
   {
     sinc_sum1 = process_funcs.get_sinc_sum(table0, table_size, index, ibuf_loc+1, sinc_offset, 1, 0);
   }
@@ -698,42 +650,57 @@ namespace OscOS {
     
     float phase1 = sc_clip(phase, 0.f, 1.0f);
 
-    float phase_diff = (phase1 - m_last_phase);
+    
 
+    if(m_oversamplingIndex<1){
+      m_last_phase = phase1;
+      out = process_funcs.get_out(table0, phase1, buf_divs, buf_loc, table_size, fmaxindex, 1, 0);
+      return out;
+    } else {
+
+    float phase_diff = (phase1 - m_last_phase);
     upsample_buf_loc.upsample(buf_loc);
 
-  //the phase_diff should not be more than 0.5 except when the phase crosses from 1 to 0 or vice versa
-  //even at the nyquist frequency, the phase_diff should not be more than 0.5
-  if(abs(phase_diff) > 0.5f){
-    if (phase1<m_last_phase)
-      phase_diff = (phase1 + 1.0f) - m_last_phase;
-    else
-      phase_diff = (phase1 - 1.0f) - m_last_phase;
-    phase_diff = phase_diff/m_oversampling_ratio;
-    for (int k = 0; k < m_oversampling_ratio; k++){
-      m_last_phase += phase_diff;
+    //the phase_diff should not be more than 0.5 except when the phase crosses from 1 to 0 or vice versa
+    //even at the nyquist frequency, the phase_diff should not be more than 0.5
+    if(abs(phase_diff) > 0.5f){
+      if (phase1<m_last_phase)
+        phase_diff = (phase1 + 1.0f) - m_last_phase;
+      else
+        phase_diff = (phase1 - 1.0f) - m_last_phase;
+      phase_diff = phase_diff/m_oversampling_ratio;
 
-      osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, sc_clip(upsample_buf[k], 0.f, 1.f), table_size, fmaxindex, 1, 0);
+      for (int k = 0; k < m_oversampling_ratio; k++){
+        m_last_phase += phase_diff;
 
-      //osBuffer[k] = Perform(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, sc_clip(upsample_buf[k], 0.f, 1.f), table_size, fmaxindex);
+        if(m_oversamplingIndex>0)
+          buf_loc = sc_clip(upsample_buf[k], 0.f, 1.0f);
+
+        osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, buf_loc, table_size, fmaxindex, 1, 0);
+      }
+      
+    }  
+    else {
+      phase_diff = phase_diff/m_oversampling_ratio;
+      for (int k = 0; k < m_oversampling_ratio; k++){
+
+        if(m_oversamplingIndex>0)
+          buf_loc = sc_clip(upsample_buf[k], 0.f, 1.0f);
+
+        m_last_phase += phase_diff;
+        
+        osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, buf_loc, table_size, fmaxindex, 1, 0);
+      }
     }
-  }  
-  else {
-    phase_diff = phase_diff/m_oversampling_ratio;
-    for (int k = 0; k < m_oversampling_ratio; k++){
-      osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, sc_clip(upsample_buf[k], 0.f, 1.f), table_size, fmaxindex, 1, 0);
-      //osBuffer[k] = Perform(table0, m_last_phase+(k*phase_diff), buf_divs, sc_clip(upsample_buf[k], 0.f, 1.f), table_size, fmaxindex);
+
+      m_last_phase = phase1;
+
+      if (m_oversamplingIndex != 0)
+        out = oversample.downsample();
+      else
+        out = osBuffer[0];
+      return out;
     }
-  }
-
-    m_last_phase = phase1;
-    m_last_buf_loc = buf_loc;
-
-    if (m_oversamplingIndex != 0)
-      out = oversample.downsample();
-    else
-      out = osBuffer[0];
-    return out;
   }
 
   void OscOS::next_aa(int nSamples)
@@ -888,9 +855,6 @@ namespace OscOS2 {
      
     int each_phase_table_size = phase_table_size/phase_buf_divs;
     int phase_fmaxindex = (float)each_phase_table_size - 1.f;
-    
-
-    //Print("table_size: %i, each_table_size: %i, each_phase_table_size: %i, buf_divs: %f\n", table_size, each_table_size, each_phase_table_size, buf_divs);
 
     for (int i = 0; i < n_samples; ++i)
     {
@@ -983,7 +947,6 @@ float OscOS3::next_os(const float* buf_data, const float* phase_buf_data, const 
         float frac = full_chan_loc - low_chan_loc;
 
         float chan0 = Perform(buf_data, phase_buf_data, saw_phase, buf_divs, os_buf_loc[k], num_chans, low_chan_loc, phase_buf_divs, os_phase_buf_loc[k], each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
-
         float chan1 = Perform(buf_data, phase_buf_data, saw_phase, buf_divs, os_buf_loc[k], num_chans, high_chan_loc, phase_buf_divs, os_phase_buf_loc[k], each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
 
         os_buffer[k] = chan0*(1.0f-frac) + chan1*frac;
@@ -1054,9 +1017,6 @@ float OscOS3::next_os(const float* buf_data, const float* phase_buf_data, const 
         phase_fmaxindex = (float)each_phase_table_size - 1.f;
       }
     }
-
-    //Print("each_phase_table_size: %i, phase_buf_divs: %f\n", each_phase_table_size, phase_buf_divs);
-
     //fmaxindex and each_table_size are size of a single channel of a single table
     int each_table_size = table_size/(buf_divs*num_chans); 
     float fmaxindex = (float)each_table_size - 1.f/(float)each_table_size;

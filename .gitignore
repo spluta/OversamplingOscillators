@@ -1,5 +1,5 @@
 build/
 build_win/
 OversamplingOscillators/scxFiles/
-.zip
+*.zip
 .DS_Store
