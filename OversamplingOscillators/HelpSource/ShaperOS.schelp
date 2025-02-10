@@ -49,7 +49,7 @@ s.boot;
 (
     //read into the table
     {
-        var amp = MouseX.kr(0,8);//.bilin(0.5, 0, 1, 0.9, 0, 2).poll;
+        var amp = MouseX.kr(0,8).poll;//.bilin(0.5, 0, 1, 0.9, 0, 2).poll;
         c = SinOsc.ar(MouseY.kr(20,300), 0, amp).tanh;
         d = ShaperOS.ar(
             b,

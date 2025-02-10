@@ -123,7 +123,7 @@ code::
 //play the buffer back with no phase buffer, which uses an internal ramp as the lookup
 {OscOS3.ar(~buf3D, -1, 43, 0, 0, 4, MouseX.kr, ~buf3D.numChannels, MouseY.kr, 2, 0, 2).dup*0.2}.scope;
 
-//now get an anti-aliased variable 
+//now get an anti-aliased variable oscillator
 ({
     var mouse = MouseY.kr;
     var freq = mouse.lincurve(0,1,0.001,SampleRate.ir/2, 4).poll;
