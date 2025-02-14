@@ -3,6 +3,8 @@ cmake_minimum_required (VERSION 2.8)
 set(lib_name "OversamplingOscillators")
 project("${lib_name}")
 
+add_definitions(-w)
+
 # set installation directory
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR NOT CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/${lib_name}" CACHE PATH "Install prefix" FORCE)
