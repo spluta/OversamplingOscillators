@@ -94,7 +94,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
         tag_name: ${{ github.ref }}
-        release_name: OversamplingOscillators -${{ github.ref }}
+        release_name: OversamplingOscillators-${{ github.ref }}
         draft: false
         prerelease: false
 
@@ -102,8 +102,8 @@ jobs:
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ${{github.workspace}}/build/OversamplingOscillators -${{runner.os}}.zip
-        asset_name: OversamplingOscillators -${{runner.os}}.zip
+        file: ${{github.workspace}}/build/OversamplingOscillators-${{runner.os}}.zip
+        asset_name: OversamplingOscillators-${{runner.os}}.zip
         tag: ${{ github.ref }}
 
 
