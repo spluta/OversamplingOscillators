@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         #os: [macOS-latest]
-        os: [windows-latest]
+        os: [macos-14-large, macos-14, windows-latest]
 
     steps:
     - uses: actions/checkout@v2
@@ -85,177 +85,24 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # # Publish build
-    # - name: Create Release
-    #   if: steps.checkTag.outputs.exists == false
-    #   id: create_release
-    #   uses: actions/create-release@v1
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-    #   with:
-    #     tag_name: ${{ github.ref }}
-    #     release_name: OversamplingOscillators-${{ github.ref }}
-    #     draft: false
-    #     prerelease: false
+    # Publish build
+    - name: Create Release
+      if: steps.checkTag.outputs.exists == false
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: OversamplingOscillators-${{ github.ref }}
+        draft: false
+        prerelease: false
 
-    # - name: Upload binaries to release
-    #   uses: svenstaro/upload-release-action@v2
-    #   with:
-    #     repo_token: ${{ secrets.GITHUB_TOKEN }}
-    #     file: ${{github.workspace}}/build/OversamplingOscillators-${{runner.os}}.zip
-    #     asset_name: OversamplingOscillators-${{runner.os}}.zip
-    #     tag: ${{ github.ref }}
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ${{github.workspace}}/build/OversamplingOscillators-${{runner.os}}.zip
+        asset_name: OversamplingOscillators-${{runner.os}}.zip
+        tag: ${{ github.ref }}
 
-
-# name: CMake
-
-# on:
-#   push:
-#     branches: [ "main" ]
-#   pull_request:
-#     branches: [ "main" ]
-
-# env:
-#   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-#   BUILD_TYPE: Release
-
-# jobs:
-#   build:
-#     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-#     # You can convert this to a matrix build if you need cross-platform coverage.
-#     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-#     runs-on: ${{matrix.os}}
-#     strategy:
-#       matrix:
-#         os: [macos-latest] #, windows-latest]
-
-#     steps:
-#     - uses: actions/checkout@v2
-
-#     - name: Install 7Zip (Windows)
-#       if: runner.os == 'Windows'
-#       shell: powershell
-#       run: Install-Module 7Zip4PowerShell -Force -Verbose
-
-#     - name: Get SC source code
-#       run: git clone https://github.com/supercollider/supercollider.git ${{github.workspace}}/supercollider           
-
-
-      
-#     - name: Create Build Environment
-#       # Some projects don't allow in-source building, so create a separate build directory
-#       # We'll use this as our working directory for all subsequent commands
-#       run: cmake -E make_directory ${{github.workspace}}/build
-
-
-
-#     - name: Configure CMake (Unix)
-#       shell: bash
-#       if: matrix.os != 'windows-latest'
-#       working-directory: ${{github.workspace}}/build
-#       run: cmake .. -DCMAKE_BUILD_TYPE='Release' -DSC_PATH=${{github.workspace}}/supercollider -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/build/install -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
-
-#     - name: Configure CMake (Windows)
-#       if: matrix.os == 'windows-latest'
-#       shell: pwsh
-#       working-directory: ${{github.workspace}}\build
-#       run: cmake .. -DCMAKE_BUILD_TYPE='Release' -DSC_PATH=${{github.workspace}}\supercollider -DCMAKE_INSTALL_PREFIX=${{github.workspace}}\build\install
-
-
-
-#     - name: Build (Unix)
-#       if: matrix.os != 'windows-latest'
-#       working-directory: ${{github.workspace}}/build
-#       shell: bash
-#       env:
-#         CMAKE_BUILD_PARALLEL_LEVEL: 4
-#       run: cmake --build . --config "Release" --target install
-
-#     - name: Build (Windows)
-#       working-directory: ${{github.workspace}}\build
-#       if: matrix.os == 'windows-latest'
-#       shell: pwsh
-#       env:
-#         CMAKE_BUILD_PARALLEL_LEVEL: 4
-#       run: cmake --build . --config "Release" --target install
-
-
-
-#         # Gather all files in a zip
-#     - name: Zip up build (Unix)
-#       if: matrix.os != 'windows-latest'
-#       shell: bash
-#       working-directory: ${{github.workspace}}/build
-#       run: zip -r "OversamplingOscillators-${{runner.os}}" "install/OversamplingOscillators"
-
-#     # Gather all files in a zip
-#     - name: Zip up build (Windows)
-#       if: matrix.os == 'windows-latest'
-#       shell: pwsh
-#       working-directory: ${{github.workspace}}\build
-#       run: Compress-7Zip "install\OversamplingOscillators" -ArchiveFileName "OversamplingOscillators-${{runner.os}}.zip" -Format Zip    
-
-
-
-#     # Upload
-#     - name: Upload binaries to release
-#       uses: svenstaro/upload-release-action@v2
-#       with:
-#         repo_token: ${{ secrets.GITHUB_TOKEN }}
-#         file: ${{github.workspace}}/build/OversamplingOscillators-${{runner.os}}.zip
-#         asset_name: OversamplingOscillators-${{runner.os}}.zip
-#         prerelease: true
-#         # body: ${{ steps.release.outputs.RELEASE_BODY }}
-#         tag: ${{ github.ref }}
-
-# # on:
-# #   push:
-# #     tags:
-# #       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-
-# # env:
-# #   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-# #   BUILD_TYPE: Release
-
-# # jobs:
-# #   build:
-
-# #     runs-on: ${{matrix.os}}
-# #     strategy:
-# #       matrix:
-# #         os: [macos-latest, ubuntu-18.04, windows-latest]
-
-# #     steps:
-# #     - uses: actions/checkout@v3
-
-# #     - name: Get SC source code
-# #       run: git clone https://github.com/supercollider/supercollider.git ${{github.workspace}}/supercollider
-
-# #     - name: Create Build Environment
-# #       # Some projects don't allow in-source building, so create a separate build directory
-# #       # We'll use this as our working directory for all subsequent commands
-# #       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-# #     - name: Configure CMake (Unix)
-# #       shell: bash
-# #       if: matrix.os != 'windows-latest'
-# #       working-directory: ${{github.workspace}}/build
-# #       run: cmake .. -DCMAKE_BUILD_TYPE='Release' -DSC_PATH=${{github.workspace}}/supercollider
-
-# #     - name: Configure CMake (Windows)
-# #       if: matrix.os == 'windows-latest'
-# #       shell: pwsh
-# #       working-directory: ${{github.workspace}}\build
-# #       run: cmake .. -DCMAKE_BUILD_TYPE='Release' -DSC_PATH=${{github.workspace}}\supercollider
-
-# #     - name: Build (Unix)
-# #       if: matrix.os != 'windows-latest'
-# #       working-directory: ${{github.workspace}}/build
-# #       shell: bash
-# #       run: cmake --build . --config "Release"
-
-# #     - name: Build (Windows)
-# #       working-directory: ${{github.workspace}}\build
-# #       if: matrix.os == 'windows-latest'
-# #       shell: pwsh
-# #       run: cmake --build . --config "Release"
