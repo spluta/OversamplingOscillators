@@ -55,13 +55,13 @@ jobs:
       if: matrix.os == 'macos-14'
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: zip -r OversamplingOscillators-arm OversamplingOscillators 
+      run: zip -r OversamplingOscillators-mac_arm.zip OversamplingOscillators 
 
     - name: Zip up build (macOS-13)
       if: matrix.os == 'macos-13'
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: zip -r OversamplingOscillators-x86 OversamplingOscillators 
+      run: zip -r OversamplingOscillators-mac_intel.zip OversamplingOscillators 
 
     - name: Zip up build (Windows)
       if: matrix.os == 'windows-latest'
@@ -101,12 +101,31 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: Upload binaries to release
+    - name: Upload binaries to release (macOS-14)
+      if: matrix.os == 'macos-14'
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ${{github.workspace}}/build/OversamplingOscillators-${{matrix.os == 'macos-14' && 'arm' || 'x86'}}.zip
-        asset_name: OversamplingOscillators-${{matrix.os == 'macos-14' && 'arm' || 'x86'}}.zip
+        file: ${{github.workspace}}/build/OversamplingOscillators-mac_arm.zip
+        asset_name: OversamplingOscillators-mac_arm.zip
+        tag: ${{ github.ref }}
+
+    - name: Upload binaries to release (macOS-13)
+      if: matrix.os == 'macos-13'
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ${{github.workspace}}/build/OversamplingOscillators-mac_intel.zip
+        asset_name: OversamplingOscillators-mac_intel.zip
+        tag: ${{ github.ref }}
+
+    - name: Upload binaries to release (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ${{github.workspace}}/build/OversamplingOscillators-${{runner.os}}.zip
+        asset_name: OversamplingOscillators-${{runner.os}}.zip
         tag: ${{ github.ref }}
     
     
