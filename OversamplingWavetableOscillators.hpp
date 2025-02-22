@@ -23,15 +23,19 @@ namespace Extras {
       ~ProcessFuncs();
       float get_phase(const float* phase_buf_data, float phase, float phase_buf_divs, float phase_buf_loc, int phase_table_size, float phase_fmaxindex);
       float get_out(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc);
+      float get_spaced_out(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int spacing, float sinc_crossfade, int num_chans, int chan_loc);
+      
       float get_out_no_interp(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc);
       float get_sinc_sum(const float* table, int table_size, int index, int ibuf_loc, int sinc_offset, int num_chans, int chan_loc);
+      float get_spaced_sinc_sum(const float* table, int table_size, float index, int spacing, int ibuf_loc, int num_chans, int chan_loc);
 
       std::array<int, 8> sinc_points;
       int sinc_len{8};
       int sinc_half_len{4};
-      int sinc_table_size{4096};
-      float max_sinc_offset{512.f};
-      std::array<float, 4096>m_sinc_table;
+      int sinc_table_size{8192};
+      float fmax_sinc_offset{1024.f};
+      int max_sinc_offset{1024};
+      std::array<float, 8192>m_sinc_table;
     
     private:
 
@@ -189,46 +193,43 @@ private:
 
 } // namespace ShaperOS2
 
-namespace OscOS {
+// namespace OscOS {
 
-class OscOS : public SCUnit {
-public:
-  OscOS();
+// class OscOS : public SCUnit {
+// public:
+//   OscOS();
 
-  // Destructor
-  ~OscOS();
-  VariableOversampling<> oversample;
-  VariableOversampling<> upsample_buf_loc;
-  float* m_inbuf;
-  float m_fbufnum;
-  SndBuf* m_buf;
-  BufUnit::BufUnit buf_unit;
-  float m_last_phase;
-  float m_last_buf_loc;
-  float m_oversampling_ratio;
+//   // Destructor
+//   ~OscOS();
+//   VariableOversampling<> oversample;
+//   VariableOversampling<> upsample_buf_loc;
+//   float* m_inbuf;
+//   float m_fbufnum;
+//   SndBuf* m_buf;
+//   BufUnit::BufUnit buf_unit;
+//   float m_last_phase;
+//   float m_last_buf_loc;
+//   float m_oversampling_ratio;
 
-  Extras::ProcessFuncs process_funcs;  
+//   Extras::ProcessFuncs process_funcs;  
   
-  float Perform(const float* table0, float phase, float buf_divs, float buf_loc, int table_size, float fmaxindex);
-  //float get_sinc_sum(const float* table, int table_size, int index, int ibuf_loc, int sinc_offset, int num_chans, int chan_loc);
+// private:
+//   // Calc function
+//   void next_aa(int nSamples);
 
-private:
-  // Calc function
-  void next_aa(int nSamples);
-
-  float next_os(const float* table0, float phase, float buf_divs, float buf_loc, int table_size, float fmaxindex);
+//   float next_os(const float* table0, float phase, float buf_divs, float buf_loc, int table_size, float fmaxindex);
 
   
-  enum InputParams { BufNum, Phase, BufDivs, BufLoc, OverSample, NumInputParams };
-  enum Outputs { Out1, NumOutputParams };
+//   enum InputParams { BufNum, Phase, BufDivs, BufLoc, OverSample, NumInputParams };
+//   enum Outputs { Out1, NumOutputParams };
 
-  float *osBuffer;
-  float *upsample_buf;
+//   float *osBuffer;
+//   float *upsample_buf;
 
-  int m_oversamplingIndex{0};
-};
+//   int m_oversamplingIndex{0};
+// };
 
-} // namespace OscOS
+// } // namespace OscOS
 
 namespace OscOS2 {
 
@@ -332,3 +333,42 @@ private:
 };
 
 } // namespace OscOS3
+
+namespace OscOS {
+
+  class OscOS : public SCUnit {
+  public:
+    OscOS();
+  
+    // Destructor
+    ~OscOS();
+    VariableOversampling<> oversample;
+    VariableOversampling<> upsample_buf_loc;
+    float* m_inbuf;
+    float m_fbufnum;
+    SndBuf* m_buf;
+    BufUnit::BufUnit buf_unit;
+    float m_last_phase;
+    float m_last_buf_loc;
+    float m_oversampling_ratio;
+    int counter{0};
+  
+    Extras::ProcessFuncs process_funcs;  
+    
+  private:
+    // Calc function
+    void next_aa(int nSamples);
+  
+    float next_os(const float* table0, float phase, float buf_divs, float buf_loc, int table_size, float fmaxindex);
+  
+    enum InputParams { BufNum, Phase, BufDivs, BufLoc, OverSample, NumInputParams };
+    enum Outputs { Out1, NumOutputParams };
+  
+    float *osBuffer;
+    float *os_buf_loc;
+    float *buf_loc_interp;
+  
+    int m_oversamplingIndex{0};
+  };
+
+} // namespace OscOS

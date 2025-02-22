@@ -4,7 +4,7 @@ categories:: UGens>Oscillator
 related:: BuchlaFoldOS, ShaperOS, OscOS3
 
 DESCRIPTION::
-An oversampled wavetable oscillator that interpolates between adjacent tables.
+An mipmap, sinc interpolated oversampled wavetable oscillator that also interpolates between adjacent wavetables. The mipmap function inside the oscillator should significatly anti-alias the output. Oversampling should get rid of any further aliasing.
 
 
 CLASSMETHODS::
@@ -48,9 +48,9 @@ code::
 //fill a buffer with 4 different waveforms
 (
     t = Signal.sineFill(2048, [1], [0]);
-    u = Signal.sineFill(2048, 1.0/(1..56));
-    w = Signal.sineFill(2048, 1.0/(1..56)*([1,0]!28).flatten);
-    x = Signal.sineFill(2048, 1.0/((1..56)**2)*([1,0,-1,0]!14).flatten);
+    u = Signal.sineFill(2048, 1.0/(1..512));
+    w = Signal.sineFill(2048, 1.0/(1..512)*([1,0]!28).flatten);
+    x = Signal.sineFill(2048, 1.0/((1..512)**2)*([1,0,-1,0]!14).flatten);
     v = t.addAll(u).addAll(w).addAll(x);
 
     b = Buffer.loadCollection(s, v);
@@ -62,16 +62,20 @@ b.plot;
 (
     {
         var phase = Phasor.ar(0,100/SampleRate.ir);
-        var osc = OscOS.ar(b,phase,4,MouseX.kr,4,0.1);
+        var osc = OscOS.ar(b,phase,4,MouseX.kr,1,0.1);
         osc
     }.scope
 )
+//open the FreqScope
+FreqScope()
 
 //LFSaw also works
+//further, the mipmap/oversampling combo should provide suitable anti-aliasing at all frequencies
 (
     {
-        var phase = [Phasor.ar(0,100/SampleRate.ir),LFSaw.ar(100,1).range(0,1)];
-        var osc = OscOS.ar(b,phase,4,MouseX.kr,4,0.1);
+        var freq = MouseY.kr(20,10000);
+        var phase = [Phasor.ar(0,freq/SampleRate.ir),LFSaw.ar(freq,1).range(0,1)];
+        var osc = OscOS.ar(b,phase,4,MouseX.kr,1,0.1);
         osc
     }.scope
 )
@@ -91,8 +95,9 @@ b.plot;
 
 (
     {
-        var phase = LFSaw.ar(400).range(0,1);
-        var osc = OscOS.ar(b,phase,2,SinOsc.ar(MouseY.kr(1,20)).range(0,1));
+        var freq = MouseY.kr(20, 800);
+        var phase = LFSaw.ar(freq).range(0,1);
+        var osc = OscOS.ar(b,phase,2,SinOsc.ar(MouseX.kr(1,20)).range(0,1));
         osc.dup*0.1
     }.scope
 )
@@ -108,7 +113,7 @@ b.plot;
             phase.bilin(midpoint.neg,-1,0,-0.5,-1,0),
             phase.bilin(midpoint,0,1,0.5,0,1)
         ])*0.5+0.5;
-        osc = OscOS.ar(b,phase,2,MouseX.kr,4,0.1);
+        osc = OscOS.ar(b,phase,2,MouseX.kr,1,0.1);
         osc.dup
     }.scope
 )
@@ -122,7 +127,7 @@ b.plot;
             phase.bilin(midpoint.neg,-1,0,(1-midpoint).neg,-1,0),
             phase.bilin(midpoint,0,1,1-midpoint,0,1)
         ])*0.5+0.5;
-        osc = OscOS.ar(b,phase,2,MouseX.kr,4,0.1);
+        osc = OscOS.ar(b,phase,2,MouseX.kr,1,0.1);
         osc.dup
     }.scope
 )
@@ -132,31 +137,12 @@ b.plot;
     {
         var fm = SinOsc.ar(100,-0.1,MouseY.kr(0,5000));
         var phase = LFSaw.ar(50+fm).range(0,1);
-        var osc = OscOS.ar(b,phase,2,MouseX.kr,4, 0.1);
+        var osc = OscOS.ar(b,phase,2,SinOsc.ar(0.2).range(0,1),1, 0.1);
         osc.dup
     }.scope
 )
 
-//build a mipmap of a sawtooth wave for an oscillator with almost no aliasing
-(
-	u = (16..0).collect{|i| 
-		Signal.sineFill(2048, 1.0/(1..(2**i)));
-	};
-	
-	~sndBuf = Buffer.loadCollection(s, u.flat);
-)
 
-(
-	{
-		var freq = SinOsc.ar(0.1, 1.5pi).linlin(-1, 1, 10, 16000);
-		var buf_loc = freq.abs.curvelin(43,SampleRate.ir/4,0,u.size, 8).poll;
-		var phase = LFSaw.ar(freq, 0, 0.5, 0.5);
-		OscOS.ar(~sndBuf, phase, 17, buf_loc/u.size, 1).dup*0.1;
-	}.scope;
-)
-
-//view the scope - so clean
-s.freqScope
 
 //you can also load samples from commercial wavetable oscillators
 c = Buffer.read(s, "/Users/spluta1/Music/Vital/Glorkglunk/Wavetables/Granular Upgrade.wav")
@@ -164,7 +150,17 @@ c = Buffer.read(s, "/Users/spluta1/Music/Vital/Glorkglunk/Wavetables/Granular Up
 (
     {
         var phase = LFSaw.ar(53.midicps/4).range(0,1);
-        var osc = OscOS.ar(c,phase,108,MouseX.kr.poll);
+        var osc = OscOS.ar(c,phase,108,MouseX.kr.poll,1);
+        osc.dup*0.2
+    }.scope
+)
+
+//wavetables should have no issues with aliasing
+
+(
+    {
+        var phase = LFSaw.ar(MouseY.kr(43.65,4000)).range(0,1);
+        var osc = OscOS.ar(c,phase,108,MouseX.kr.poll,1);
         osc.dup*0.2
     }.scope
 )

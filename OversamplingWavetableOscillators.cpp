@@ -38,9 +38,7 @@ namespace Extras {
   ProcessFuncs::ProcessFuncs()
   {
     m_sinc_table = get_sinc_window();
-    sinc_points = {0, 512, 1024, 1536, 2048, 2560, 3072, 3584};//(int*)RTAlloc(mWorld, 8.0 * sizeof(int));
-    // for(int i = 0; i<8; i++)
-    //   sinc_points[i]=i*512;
+    sinc_points = {0, 1024, 2048, 3072, 4096, 5120, 6144, 7168};//
   }
 
   ProcessFuncs::~ProcessFuncs() {}
@@ -142,8 +140,6 @@ namespace Extras {
   float ProcessFuncs::get_out(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc) {
     //now that we have the ramp, use it to get the value from the buffer
 
-    //int loc = (index+zero_index)*num_chans + chan_loc;
-
     buf_loc = buf_loc*(float)(buf_divs-1);
     int ibuf_loc = (int)buf_loc;
 
@@ -156,7 +152,7 @@ namespace Extras {
     float frac_loc = buf_loc - ibuf_loc;
 
     //get the table0
-    int sinc_offset = (int)(frac*max_sinc_offset);
+    int sinc_offset = (int)(frac*fmax_sinc_offset);
 
     float sinc_sum0 = get_sinc_sum(buf_data, each_table_size, index, ibuf_loc, sinc_offset, num_chans, chan_loc);
 
@@ -169,15 +165,109 @@ namespace Extras {
     return out;
   }
 
+  float ProcessFuncs::get_spaced_out(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int spacing1, float sinc_crossfade, int num_chans, int chan_loc) {
+    //now that we have the ramp, use it to get the value from the buffer
+
+    int spacing2 = spacing1*2;
+
+    buf_loc = buf_loc*(float)(buf_divs-1);
+    int ibuf_loc = (int)buf_loc;
+
+    float findex = (ramp*fmaxindex);
+    int ibuf_divs = (int)buf_divs;
+    float out;
+
+    float frac_loc = buf_loc - ibuf_loc;
+    //std::cout << buf_loc << " " << frac_loc << std::endl;
+
+    float sinc1 = get_spaced_sinc_sum(buf_data, each_table_size, findex, spacing1, ibuf_loc, num_chans, chan_loc);
+    float sinc2 = 0.f;
+    float outA = 0.f;
+    //we only need to calculate sinc2 if we aren't in the top octave
+    if(spacing1<max_sinc_offset){
+      sinc2 = get_spaced_sinc_sum(buf_data, each_table_size, findex, spacing2, ibuf_loc, num_chans, chan_loc);
+      outA = sinc1*(1.0f-sinc_crossfade) + sinc2*sinc_crossfade;
+    } else {
+      outA = sinc1;
+    }
+
+    float outB = 0.f;
+    if(ibuf_loc < ibuf_divs-1)
+    {
+      sinc1 = get_spaced_sinc_sum(buf_data, each_table_size, findex, spacing1, ibuf_loc+1, num_chans, chan_loc);
+      if(spacing1<max_sinc_offset){
+        sinc2 = get_spaced_sinc_sum(buf_data, each_table_size, findex, spacing2, ibuf_loc+1, num_chans, chan_loc);
+        outB = sinc1*(1.0f-sinc_crossfade) + sinc2*sinc_crossfade;
+      } else {
+        outB = sinc1;
+      }
+    }
+
+    out = outA*(1.0f-frac_loc) + outB*frac_loc;
+    return out;
+  }
+
+  float quadratic_interpolation(float y0, float y1, float y2, float x) {
+    // Calculate the coefficients of the quadratic polynomial
+    float a = ((x - 1) * (x - 2)) * 0.5f * y0;
+    float b = (x * (x - 2)) * (-1.0f) * y1;
+    float c = (x * (x - 1)) * 0.5f * y2;
+
+    // Return the estimated value
+    return a + b + c;
+  }
+
+  float ProcessFuncs::get_spaced_sinc_sum(const float* table, int table_size, float findex, int spacing, int ibuf_loc, int num_chans, int chan_loc){
+    float sinc_sum=0.f;
+
+    //zero_index is the index of the first sample of the small table inside the big table
+    int zero_index = (ibuf_loc*table_size);
+    int sinc_mult = max_sinc_offset/spacing;
+    int index = (int)findex;
+    float frac = findex - index;
+    
+    for(int sp=0; sp<sinc_len; sp++){
+
+      //the exact point along the 1D table
+      int loc_point=index+((sp-sinc_half_len)*spacing);
+      loc_point = sc_wrap(loc_point, 0, table_size-1);
+      //round to the nearest spacing
+      int spaced_point = (loc_point/spacing)*spacing;
+
+      //the offset from the exact point to the nearest spacing
+      int sinc_offset2 = (loc_point-spaced_point);
+
+      //add the zero index to shift to the correct table
+      spaced_point = spaced_point+zero_index;
+
+      //quadratic interpolation
+      int sinc_indexA = (sinc_points[sp]+(max_sinc_offset-1)-(sinc_offset2*sinc_mult));
+      int sinc_indexB = (sinc_points[sp]+max_sinc_offset-(sinc_offset2*sinc_mult));
+      int sinc_indexC = (sinc_points[sp]+(max_sinc_offset+1)-(sinc_offset2*sinc_mult));
+
+      sinc_indexA = sc_wrap(sinc_indexA, 0, sinc_table_size-1);
+      sinc_indexB = sc_wrap(sinc_indexB, 0, sinc_table_size-1);
+      sinc_indexC = sc_wrap(sinc_indexC, 0, sinc_table_size-1);
+
+      float sinc_val = quadratic_interpolation(m_sinc_table[sinc_indexA], m_sinc_table[sinc_indexB], m_sinc_table[sinc_indexC], frac);
+      //float sinc_val = m_sinc_table[sinc_indexA]*(1.0f-frac) + m_sinc_table[sinc_indexB]*frac;
+
+      sinc_sum += sinc_val * table[spaced_point];
+    }
+    return sinc_sum;
+  }
+
   float ProcessFuncs::get_sinc_sum(const float* table, int table_size, int index, int ibuf_loc, int sinc_offset, int num_chans, int chan_loc){
     float sinc_sum=0.f;
 
+    //zero_index is the index of the first sample of the small table inside the big table
     int zero_index = (ibuf_loc*table_size);
     
     for(int sp=0; sp<sinc_len; sp++){
 
       //find the points in the interleaved table
-      int loc_point=(sc_wrap(index+(sp-sinc_half_len), 0, table_size-1)+zero_index)*num_chans+chan_loc;
+      int loc_point=(sc_wrap(index+((sp-sinc_half_len)), 0, table_size-1)+zero_index)*num_chans+chan_loc;
+      //int loc_point=(((index+(sp-sinc_half_len))%table_size)+zero_index)*num_chans+chan_loc;
 
       sinc_sum += m_sinc_table[sinc_points[sp]+sinc_offset]*table[loc_point];
     }
@@ -501,9 +591,6 @@ namespace ShaperOS2 {
     float out;
     
     input = (input+1.f)*0.5f;
-    //input = sc_clip(input, 0, 1.0f);
-
-    //Print("input: %f\n", input);
     
     float buf_loc1 = sc_clip(buf_loc, 0.f, 1.0f);
 
@@ -555,187 +642,130 @@ namespace ShaperOS2 {
   }
 } // namespace ShaperOS2
 
-// float sinc(float x) {
-//   if (x == 0.0f) {
-//     return 1.0f;
-//   } else {
-//     return sinf(M_PI * x) / (M_PI * x);
-//   }
-// }
+// namespace OscOS {
 
-// void generateSincTable(float* table, int size, int ripples) {
-//   float step = 2.0f * ripples / (size - 1);
-//   for (int i = 0; i < size; ++i) {
-//     float x = i * step - ripples;
-//     table[i] = sinc(x);
-//   }
-// }
+//   OscOS::OscOS()
+//   {
+//     const float samplerate = (float) sampleRate();
 
-// #include <cmath>
-// #include <vector>
+//     m_fbufnum = std::numeric_limits<float>::quiet_NaN();
+//     m_buf = nullptr;
 
-// std::vector<float> generateKaiserWindow(int size, float beta) {
-//   std::vector<float> window(size);
-//   float denom = std::cyl_bessel_i(0, beta);
-//   for (int i = 0; i < size; ++i) {
-//     float x = 2.0f * i / (size - 1) - 1.0f;
-//     window[i] = std::cyl_bessel_i(0, beta * std::sqrt(1 - x * x)) / denom;
-//   }
-//   return window;
-// }
+//     m_last_phase = 0.f;
 
-namespace OscOS {
+//     buf_unit = BufUnit::BufUnit();
 
-  OscOS::OscOS()
-  {
-    const float samplerate = (float) sampleRate();
+//     oversample.reset(samplerate);
+//     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
+//     oversample.setOversamplingIndex(m_oversamplingIndex);
+//     osBuffer = oversample.getOSBuffer();
 
-    m_fbufnum = std::numeric_limits<float>::quiet_NaN();
-    m_buf = nullptr;
+//     upsample_buf_loc.reset(samplerate);
+//     upsample_buf_loc.setOversamplingIndex(m_oversamplingIndex);
+//     upsample_buf = upsample_buf_loc.getOSBuffer();
 
-    m_last_phase = 0.f;
+//     m_oversampling_ratio = oversample.getOversamplingRatio();
 
-    buf_unit = BufUnit::BufUnit();
+//     const int tableSize = 8192;
+//     const int ripples = 8;
 
-    oversample.reset(samplerate);
-    m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
-    oversample.setOversamplingIndex(m_oversamplingIndex);
-    osBuffer = oversample.getOSBuffer();
+//     mCalcFunc = make_calc_function<OscOS, &OscOS::next_aa>();
+//     next_aa(1);
+//   } 
+//   OscOS::~OscOS() {}
 
-    upsample_buf_loc.reset(samplerate);
-    upsample_buf_loc.setOversamplingIndex(m_oversamplingIndex);
-    upsample_buf = upsample_buf_loc.getOSBuffer();
-
-    m_oversampling_ratio = oversample.getOversamplingRatio();
-
-    const int tableSize = 4096;
-    const int ripples = 8;
-
-    mCalcFunc = make_calc_function<OscOS, &OscOS::next_aa>();
-    next_aa(1);
-  } 
-  OscOS::~OscOS() {}
-
- float OscOS::Perform(const float* table0, float phase, float buf_divs, float fbuf_loc, int table_size, float fmaxindex) {
-
-  float findex = (phase*fmaxindex);
-  int index = (int)findex;
-  float frac = findex - index;
-  int ibuf_divs = (int)buf_divs;
-  float out;
-
-  //get the float and int locations in the buffer table
-  fbuf_loc = fbuf_loc*(buf_divs-1);
-  int ibuf_loc = (int)fbuf_loc;
-
-  float frac_loc = fbuf_loc - ibuf_loc;
-
-  //get the table0
-  int sinc_offset = (int)(frac*process_funcs.max_sinc_offset);
-
-  float sinc_sum0 = process_funcs.get_sinc_sum(table0, table_size, index, ibuf_loc, sinc_offset, 1, 0);
-
-  float sinc_sum1 = 0.0f;
-  if(ibuf_loc < ibuf_divs-1)
-  {
-    sinc_sum1 = process_funcs.get_sinc_sum(table0, table_size, index, ibuf_loc+1, sinc_offset, 1, 0);
-  }
-  out = sinc_sum0*(1.0f-frac_loc) + sinc_sum1*frac_loc;
-  return out;
-}
-
-  float OscOS::next_os(const float* table0, float phase, float buf_divs, float buf_loc, int table_size, float fmaxindex)
-  {
-    float out;
+//   float OscOS::next_os(const float* table0, float phase, float buf_divs, float buf_loc, int table_size, float fmaxindex)
+//   {
+//     float out;
     
-    float phase1 = sc_clip(phase, 0.f, 1.0f);
+//     float phase1 = sc_clip(phase, 0.f, 1.0f);
 
     
 
-    if(m_oversamplingIndex<1){
-      m_last_phase = phase1;
-      out = process_funcs.get_out(table0, phase1, buf_divs, buf_loc, table_size, fmaxindex, 1, 0);
-      return out;
-    } else {
+//     if(m_oversamplingIndex<1){
+//       m_last_phase = phase1;
+//       out = process_funcs.get_out(table0, phase1, buf_divs, buf_loc, table_size, fmaxindex, 1, 0);
+//       return out;
+//     } else {
 
-    float phase_diff = (phase1 - m_last_phase);
-    upsample_buf_loc.upsample(buf_loc);
+//     float phase_diff = (phase1 - m_last_phase);
+//     upsample_buf_loc.upsample(buf_loc);
 
-    //the phase_diff should not be more than 0.5 except when the phase crosses from 1 to 0 or vice versa
-    //even at the nyquist frequency, the phase_diff should not be more than 0.5
-    if(abs(phase_diff) > 0.5f){
-      if (phase1<m_last_phase)
-        phase_diff = (phase1 + 1.0f) - m_last_phase;
-      else
-        phase_diff = (phase1 - 1.0f) - m_last_phase;
-      phase_diff = phase_diff/m_oversampling_ratio;
+//     //the phase_diff should not be more than 0.5 except when the phase crosses from 1 to 0 or vice versa
+//     //even at the nyquist frequency, the phase_diff should not be more than 0.5
+//     if(abs(phase_diff) > 0.5f){
+//       if (phase1<m_last_phase)
+//         phase_diff = (phase1 + 1.0f) - m_last_phase;
+//       else
+//         phase_diff = (phase1 - 1.0f) - m_last_phase;
+//       phase_diff = phase_diff/m_oversampling_ratio;
 
-      for (int k = 0; k < m_oversampling_ratio; k++){
-        m_last_phase += phase_diff;
+//       for (int k = 0; k < m_oversampling_ratio; k++){
+//         m_last_phase += phase_diff;
 
-        if(m_oversamplingIndex>0)
-          buf_loc = sc_clip(upsample_buf[k], 0.f, 1.0f);
+//         if(m_oversamplingIndex>0)
+//           buf_loc = sc_clip(upsample_buf[k], 0.f, 1.0f);
 
-        osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, buf_loc, table_size, fmaxindex, 1, 0);
-      }
+//         osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, buf_loc, table_size, fmaxindex, 1, 0);
+//       }
       
-    }  
-    else {
-      phase_diff = phase_diff/m_oversampling_ratio;
-      for (int k = 0; k < m_oversampling_ratio; k++){
+//     }  
+//     else {
+//       phase_diff = phase_diff/m_oversampling_ratio;
+//       for (int k = 0; k < m_oversampling_ratio; k++){
 
-        if(m_oversamplingIndex>0)
-          buf_loc = sc_clip(upsample_buf[k], 0.f, 1.0f);
+//         if(m_oversamplingIndex>0)
+//           buf_loc = sc_clip(upsample_buf[k], 0.f, 1.0f);
 
-        m_last_phase += phase_diff;
+//         m_last_phase += phase_diff;
         
-        osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, buf_loc, table_size, fmaxindex, 1, 0);
-      }
-    }
+//         osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, buf_loc, table_size, fmaxindex, 1, 0);
+//       }
+//     }
 
-      m_last_phase = phase1;
+//       m_last_phase = phase1;
 
-      if (m_oversamplingIndex != 0)
-        out = oversample.downsample();
-      else
-        out = osBuffer[0];
-      return out;
-    }
-  }
+//       if (m_oversamplingIndex != 0)
+//         out = oversample.downsample();
+//       else
+//         out = osBuffer[0];
+//       return out;
+//     }
+//   }
 
-  void OscOS::next_aa(int nSamples)
-  {
-    const float *phase = in(Phase);
-    float buf_divs = floor(in0(BufDivs));
-    const float *buf_loc = in(BufLoc);
-    const float buf_num = in0(BufNum);
-    float *outbuf = out(Out1);
+//   void OscOS::next_aa(int nSamples)
+//   {
+//     const float *phase = in(Phase);
+//     float buf_divs = floor(in0(BufDivs));
+//     const float *buf_loc = in(BufLoc);
+//     const float buf_num = in0(BufNum);
+//     float *outbuf = out(Out1);
 
-    if (buf_divs < 1.f)
-      buf_divs = 1.f;
+//     if (buf_divs < 1.f)
+//       buf_divs = 1.f;
     
-    // get table
-    const SndBuf* buf; const float* bufData; int tableSize;
+//     // get table
+//     const SndBuf* buf; const float* bufData; int tableSize;
     
-    const bool verify_buf = buf_unit.GetTable(mWorld, buf_num, nSamples, buf, bufData, tableSize);
+//     const bool verify_buf = buf_unit.GetTable(mWorld, buf_num, nSamples, buf, bufData, tableSize);
 
-    if (!verify_buf){
-        ClearUnitOutputs(this, nSamples);
-        return;
-    }
+//     if (!verify_buf){
+//         ClearUnitOutputs(this, nSamples);
+//         return;
+//     }
 
-    const float* table0 = bufData;
+//     const float* table0 = bufData;
 
-    int each_table_size = tableSize/buf_divs;
-    float fmaxindex = (float)each_table_size - 1.f/(float)(each_table_size);
+//     int each_table_size = tableSize/buf_divs;
+//     float fmaxindex = (float)each_table_size - 1.f/(float)(each_table_size);
      
 
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i] = OscOS::next_os(table0, phase[i], buf_divs, buf_loc[i], each_table_size, fmaxindex);
-    }
-  }
-} // namespace OscOS
+//     for (int i = 0; i < nSamples; ++i)
+//     {
+//       outbuf[i] = OscOS::next_os(table0, phase[i], buf_divs, buf_loc[i], each_table_size, fmaxindex);
+//     }
+//   }
+// } // namespace OscOS
 
 
 namespace OscOS2 {
@@ -1032,6 +1062,147 @@ float OscOS3::next_os(const float* buf_data, const float* phase_buf_data, const 
   }
 } // namespace OscOS3
 
+namespace OscOS {
+
+  OscOS::OscOS()
+  {
+    const float samplerate = (float)sampleRate();
+
+    m_fbufnum = std::numeric_limits<float>::quiet_NaN();
+    m_buf = nullptr;
+
+    m_last_phase = 0.f;
+    m_last_buf_loc = 0.f;
+
+    buf_unit = BufUnit::BufUnit();
+
+    oversample.reset(samplerate);
+    m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
+    oversample.setOversamplingIndex(m_oversamplingIndex);
+    osBuffer = oversample.getOSBuffer();
+
+    upsample_buf_loc.reset(samplerate);
+    upsample_buf_loc.setOversamplingIndex(m_oversamplingIndex);
+    os_buf_loc = upsample_buf_loc.getOSBuffer();
+
+    m_oversampling_ratio = oversample.getOversamplingRatio();
+
+    buf_loc_interp = (float*)RTAlloc(mWorld, m_oversampling_ratio * sizeof(float));
+
+    const int tableSize = 4096;
+    const int ripples = 8;
+
+    mCalcFunc = make_calc_function<OscOS, &OscOS::next_aa>();
+    next_aa(1);
+  } 
+  OscOS::~OscOS() {}
+
+  float OscOS::next_os(const float* table0, float phase, float buf_divs, float buf_loc, int table_size, float fmaxindex)
+  {
+    float out;
+    
+    float phase1 = sc_clip(phase, 0.f, 1.0f);
+    float phase_diff = (phase1 - m_last_phase);
+
+    float slope = sc_wrap(phase_diff, -0.5f, 0.5f);
+    float samplesPerFrame = abs(slope) * table_size;
+    float octave = std::max(0.f, log2(samplesPerFrame));
+    octave = std::min(octave, (float)(log2(table_size)-2));
+
+    counter++;
+    int layer = floor(octave);
+    float sinc_crossfade = octave - layer;
+    int spacing1 = pow(2, layer);
+
+    if(m_oversamplingIndex<1){
+      m_last_phase = phase1;
+      out = process_funcs.get_spaced_out(table0, phase1, buf_divs, buf_loc, table_size, fmaxindex, spacing1, sinc_crossfade, 1, 0);
+      return out;
+    } else {
+      upsample_buf_loc.upsample(buf_loc);
+    // float buf_loc_diff = buf_loc - m_last_buf_loc;
+    // for(int k = 1; k <= m_oversampling_ratio; k++){
+    //   buf_loc_interp[k] = m_last_buf_loc + (buf_loc_diff*k/m_oversampling_ratio);
+    // }
+    //m_last_buf_loc = buf_loc;
+
+    //the phase_diff should not be more than 0.5 except when the phase crosses from 1 to 0 or vice versa
+    //even at the nyquist frequency, the phase_diff should not be more than 0.5
+    if(abs(phase_diff) > 0.5f){
+      if (phase1<m_last_phase)
+        phase_diff = (phase1 + 1.0f) - m_last_phase;
+      else
+        phase_diff = (phase1 - 1.0f) - m_last_phase;
+      phase_diff = phase_diff/m_oversampling_ratio;
+
+      for (int k = 0; k < m_oversampling_ratio; k++){
+        m_last_phase += phase_diff;
+
+        // if(m_oversamplingIndex>0)
+        //   buf_loc = buf_loc_interp[k];
+
+        //osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, buf_loc, table_size, fmaxindex, 1, 0);
+        osBuffer[k] = process_funcs.get_spaced_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, os_buf_loc[k], table_size, fmaxindex, spacing1, sinc_crossfade, 1, 0);
+      }
+      
+    }  
+    else {
+      phase_diff = phase_diff/m_oversampling_ratio;
+      for (int k = 0; k < m_oversampling_ratio; k++){
+
+        // if(m_oversamplingIndex>0)
+        //   buf_loc = buf_loc_interp[k];
+
+        m_last_phase += phase_diff;
+        
+        osBuffer[k] = process_funcs.get_spaced_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, os_buf_loc[k], table_size, fmaxindex, spacing1, sinc_crossfade, 1, 0);
+      }
+    }
+
+      m_last_phase = phase1;
+
+      if (m_oversamplingIndex != 0)
+        out = oversample.downsample();
+      else
+        out = osBuffer[0];
+      return out;
+    }
+  }
+
+  void OscOS::next_aa(int nSamples)
+  {
+    const float *phase = in(Phase);
+    float buf_divs = floor(in0(BufDivs));
+    const float *buf_loc = in(BufLoc);
+    const float buf_num = in0(BufNum);
+    float *outbuf = out(Out1);
+
+    if (buf_divs < 1.f)
+      buf_divs = 1.f;
+    
+    // get table
+    const SndBuf* buf; const float* bufData; int tableSize;
+    
+    const bool verify_buf = buf_unit.GetTable(mWorld, buf_num, nSamples, buf, bufData, tableSize);
+
+    if (!verify_buf){
+        ClearUnitOutputs(this, nSamples);
+        return;
+    }
+
+    const float* table0 = bufData;
+
+    int each_table_size = tableSize/buf_divs;
+    float fmaxindex = (float)each_table_size - 1.f/(float)(each_table_size);
+     
+
+    for (int i = 0; i < nSamples; ++i)
+    {
+      outbuf[i] = OscOS::next_os(table0, phase[i], buf_divs, buf_loc[i], each_table_size, fmaxindex);
+    }
+  }
+} // namespace OscOS
+
 PluginLoad(OversamplingOscillators)
 {
   ft = inTable;
@@ -1040,6 +1211,7 @@ PluginLoad(OversamplingOscillators)
   registerUnit<ShaperOS::ShaperOS>(ft, "ShaperOS", false);
   registerUnit<ShaperOS2::ShaperOS2>(ft, "ShaperOS2", false);
   registerUnit<OscOS::OscOS>(ft, "OscOS", false);
+  //registerUnit<OscMOS::OscMOS>(ft, "OscMOS", false);
   registerUnit<OscOS2::OscOS2>(ft, "OscOS2", false);
   registerUnit<OscOS3::OscOS3>(ft, "OscOS3", false);
 }

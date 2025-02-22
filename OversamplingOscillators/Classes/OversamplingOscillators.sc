@@ -643,6 +643,16 @@ OscOS : PureUGen {
 	}
 }
 
+/*OscMOS : PureUGen {
+	*ar {
+		arg bufnum, phase, buf_divs = 1, buf_loc, oversample = 1, mul = 1.0, add = 0.0;
+		if(phase.rate!='audio'){phase = K2A.ar(phase)};
+		if(buf_loc.rate!='audio'){buf_loc = K2A.ar(buf_loc)};
+		bufnum.isNil.if {"Invalid buffer".throw};
+		^this.multiNew('audio', bufnum, phase, buf_divs, buf_loc, oversample).madd(mul, add)
+	}
+}*/
+
 OscOS2 : PureUGen {
 	*ar {
 		arg sound_bufnum, phase_bufnum, freq, phase, buf_divs = 1, buf_loc=0, phase_buf_divs=1, phase_buf_loc=0, oversample = 1, mul = 1.0, add = 0.0;

@@ -24,8 +24,13 @@ run the following from this directory to build from source using cmake
 mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DSC_PATH=<PATH TO SC SOURCE> 
+
 cmake --build . --config Release
+OR
+cmake --build . --config "Release" --target install
 ```
+
+The latter will create a directory within the build directory that contains everything that needs to be moved into the SC Extensions folder.
 
 It should build . The OS plugins are Oversampled. The BL plugins are polynomial bandlimited.
 
