@@ -4,7 +4,7 @@ categories:: UGens>Oscillator
 related:: BuchlaFoldOS, ShaperOS, OscOS3
 
 DESCRIPTION::
-An mipmap, sinc interpolated oversampled wavetable oscillator that also interpolates between adjacent wavetables. The mipmap function inside the oscillator should significatly anti-alias the output. Oversampling should get rid of any further aliasing.
+A sinc interpolated mipmapped and oversampled wavetable oscillator that also interpolates between adjacent wavetables. The mipmap function inside the oscillator should significatly anti-alias the output. Oversampling should get rid of any further aliasing.
 
 
 CLASSMETHODS::
@@ -71,6 +71,7 @@ FreqScope()
 
 //LFSaw also works
 //further, the mipmap/oversampling combo should provide suitable anti-aliasing at all frequencies
+//an oversample index of 1 should be sufficient in most cases
 (
     {
         var freq = MouseY.kr(20,10000);
@@ -79,6 +80,21 @@ FreqScope()
         osc
     }.scope
 )
+
+//some lovely extreme modulation is possible
+
+(
+    {
+        var mod_phase = Phasor.ar(0,MouseX.kr(20, 4000).poll/SampleRate.ir, 0, 1);
+        var mod = OscOS.ar(b,mod_phase,4,MouseX.kr,1,0.5);
+    
+        var phase = Phasor.ar(0,(MouseY.kr(20, 4000)+(mod*2000))/SampleRate.ir, 0, 1);
+    
+        var osc = OscOS.ar(b,phase,4,MouseX.kr,1,0.1);
+        osc.dup
+    }.scope
+)
+
 
 //modulate the buffer location very quickly
 
