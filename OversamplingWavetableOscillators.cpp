@@ -241,9 +241,9 @@ namespace Extras {
       spaced_point = spaced_point+zero_index;
 
       //quadratic interpolation
-      int sinc_indexA = (sinc_points[sp]+(max_sinc_offset-1)-(sinc_offset2*sinc_mult));
-      int sinc_indexB = (sinc_points[sp]+max_sinc_offset-(sinc_offset2*sinc_mult));
-      int sinc_indexC = (sinc_points[sp]+(max_sinc_offset+1)-(sinc_offset2*sinc_mult));
+      int sinc_indexA = (sinc_points[sp]-(sinc_offset2*sinc_mult));
+      int sinc_indexB = (sinc_points[sp]-1-(sinc_offset2*sinc_mult));
+      int sinc_indexC = (sinc_points[sp]-2-(sinc_offset2*sinc_mult));
 
       sinc_indexA = sc_wrap(sinc_indexA, 0, sinc_table_size-1);
       sinc_indexB = sc_wrap(sinc_indexB, 0, sinc_table_size-1);
@@ -1107,11 +1107,12 @@ namespace OscOS {
     float slope = sc_wrap(phase_diff, -0.5f, 0.5f);
     float samplesPerFrame = abs(slope) * table_size;
     float octave = std::max(0.f, log2(samplesPerFrame));
-    octave = std::min(octave, (float)(log2(table_size)-2));
+    octave = std::min(octave, (float)(log2(table_size)-2.f));
 
     counter++;
     int layer = floor(octave);
     float sinc_crossfade = octave - layer;
+
     int spacing1 = pow(2, layer);
 
     if(m_oversamplingIndex<1){
@@ -1120,11 +1121,6 @@ namespace OscOS {
       return out;
     } else {
       upsample_buf_loc.upsample(buf_loc);
-    // float buf_loc_diff = buf_loc - m_last_buf_loc;
-    // for(int k = 1; k <= m_oversampling_ratio; k++){
-    //   buf_loc_interp[k] = m_last_buf_loc + (buf_loc_diff*k/m_oversampling_ratio);
-    // }
-    //m_last_buf_loc = buf_loc;
 
     //the phase_diff should not be more than 0.5 except when the phase crosses from 1 to 0 or vice versa
     //even at the nyquist frequency, the phase_diff should not be more than 0.5
@@ -1138,10 +1134,6 @@ namespace OscOS {
       for (int k = 0; k < m_oversampling_ratio; k++){
         m_last_phase += phase_diff;
 
-        // if(m_oversamplingIndex>0)
-        //   buf_loc = buf_loc_interp[k];
-
-        //osBuffer[k] = process_funcs.get_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, buf_loc, table_size, fmaxindex, 1, 0);
         osBuffer[k] = process_funcs.get_spaced_out(table0, sc_wrap(m_last_phase, 0.f, 1.0f), buf_divs, os_buf_loc[k], table_size, fmaxindex, spacing1, sinc_crossfade, 1, 0);
       }
       
@@ -1149,9 +1141,6 @@ namespace OscOS {
     else {
       phase_diff = phase_diff/m_oversampling_ratio;
       for (int k = 0; k < m_oversampling_ratio; k++){
-
-        // if(m_oversamplingIndex>0)
-        //   buf_loc = buf_loc_interp[k];
 
         m_last_phase += phase_diff;
         

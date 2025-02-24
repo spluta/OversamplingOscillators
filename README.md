@@ -32,10 +32,10 @@ cmake --build . --config "Release" --target install
 
 The latter will create a directory within the build directory that contains everything that needs to be moved into the SC Extensions folder.
 
-It should build . The OS plugins are Oversampled. The BL plugins are polynomial bandlimited.
+It should build. The OS plugins are Oversampled. The BL plugins are polynomial bandlimited.
 
-After building ake sure this directory or all of the scx, sc, and schelp files are in the SC path, recompile the SC libary, and they should work. 
+After building, make sure this directory or all of the scx, sc, and schelp files are in the SC path, recompile the SC libary, and they should work. If you ran --target install, this simply means moving the OversamplingOscillators directory that was created in the build directory to your Extensions folder.
 
-If downloading a pre-build binary, mac users will need to unquarantine. In the terminal, run 'xattr -cr <the_oversampling_oscillators_directory>'
+If downloading a pre-build binary, mac users will need to unquarantine. In the terminal, run 'xattr -c <the_oversampling_oscillators_directory_with_the_scx_files>/*.scx'
 
 #OversamplingOscillators
