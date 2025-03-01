@@ -91,7 +91,9 @@ namespace SergeFoldOS {
   {
     const float samplerate = (float) sampleRate();
 
-    sergeWavetable = getSergeWavetable().data();
+    wavetable = getSergeWavetable();
+
+    sergeWavetable = wavetable.data();
 
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
@@ -107,18 +109,8 @@ namespace SergeFoldOS {
 
   float SergeFoldOS::next(float sig, float amp) {
     float out = tanh(sig*amp)*0.5f+0.5f;
-    // float findex = ((out*0.5+0.5)*(float)sergeWavetable.size());
-    // float frac = findex - (int)findex;
-    // int index = (int)findex;
 
-    // if (index < 0) {
-    //   index = 0;
-    // }
-    // else if (index > sergeWavetable.size()-2) {
-    //   index = sergeWavetable.size()-2;
-    // }
-
-    out = process_funcs.get_out_quadratic(sergeWavetable, out, 1.0f, 0.f, 1000, 1000.f, 1, 0, 1);
+    out = process_funcs.get_out_quadratic(sergeWavetable, out, 1.0f, 0.f, 1000, 999.f, 1, 0, 1);
 
     out = tanh(out);
 

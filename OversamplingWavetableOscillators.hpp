@@ -44,6 +44,7 @@ public:
   // Destructor
   ~SergeFoldOS();
   VariableOversampling<> oversample;
+  std::array<float, 1000> wavetable;
   float* sergeWavetable;
   float m_oversampling_ratio;
   Extras::ProcessFuncs process_funcs;
