@@ -4,7 +4,9 @@ categories:: UGens>Oscillator
 related:: BuchlaFoldOS, ShaperOS, OscOS3
 
 DESCRIPTION::
-A sinc interpolated mipmapped and oversampled wavetable oscillator that also interpolates between adjacent wavetables. The mipmap function inside the oscillator should significatly anti-alias the output. Oversampling should get rid of any further aliasing.
+A sinc interpolated mipmapped and oversampled wavetable oscillator that also interpolates between adjacent wavetables, thus providing a 3D wavetable oscillator with no aliasing. 
+
+The mipmap function inside the oscillator should significatly anti-alias the output. Oversampling should get rid of any further aliasing.
 
 
 CLASSMETHODS::
@@ -47,22 +49,21 @@ EXAMPLES::
 code::
 //fill a buffer with 4 different waveforms
 (
-    t = Signal.sineFill(2048, [1], [0]);
-    u = Signal.sineFill(2048, 1.0/(1..512));
-    w = Signal.sineFill(2048, 1.0/(1..512)*([1,0]!28).flatten);
-    x = Signal.sineFill(2048, 1.0/((1..512)**2)*([1,0,-1,0]!14).flatten);
+    t = Signal.sineFill(4096, [1], [0]);
+    u = Signal.sineFill(4096, 1.0/((1..512)**2)*([1,0,-1,0]!128).flatten);
+    w = Signal.sineFill(4096, 1.0/(1..512)*([1,0]!256).flatten);
+    x = Signal.sineFill(4096, 1.0/(1..512));
     v = t.addAll(u).addAll(w).addAll(x);
 
     b = Buffer.loadCollection(s, v);
 )
-
 //plot the buffer if you like
-b.plot;
+x.plot;
 
 (
     {
         var phase = Phasor.ar(0,100/SampleRate.ir);
-        var osc = OscOS.ar(b,phase,4,MouseX.kr,1,0.1);
+        var osc = OscOS.ar(b,phase,4,MouseX.kr,0,0.1);
         osc
     }.scope
 )
@@ -77,6 +78,16 @@ FreqScope()
         var freq = MouseY.kr(20,10000);
         var phase = [Phasor.ar(0,freq/SampleRate.ir),LFSaw.ar(freq,1).range(0,1)];
         var osc = OscOS.ar(b,phase,4,MouseX.kr,1,0.1);
+        osc
+    }.scope
+)
+
+//without any oversampling, the oscillator will internally use one fewer octave of partials, preventing aliasing, but missing much of the top octave of partials
+(
+    {
+        var freq = MouseY.kr(20,12000);
+        var phase = [Phasor.ar(0,freq/SampleRate.ir),LFSaw.ar(freq,1).range(0,1)];
+        var osc = OscOS.ar(b,phase,4,MouseX.kr,0,0.1);
         osc
     }.scope
 )
@@ -172,13 +183,70 @@ c = Buffer.read(s, "/Users/spluta1/Music/Vital/Glorkglunk/Wavetables/Granular Up
 )
 
 //wavetables should have no issues with aliasing
-
+//there is some low end distortion which can be removed with a LPF
 (
     {
-        var phase = LFSaw.ar(MouseY.kr(43.65,4000)).range(0,1);
-        var osc = OscOS.ar(c,phase,108,MouseX.kr.poll,1);
+        var freq = MouseY.kr(43.65,4000);
+        var phase = LFSaw.ar(freq).range(0,1);
+        var osc = OscOS.ar(c,phase,108,MouseX.kr,1);
+        osc = HPF.ar(osc, freq.clip(20, 20000));
         osc.dup*0.2
     }.scope
 )
+
+
+//Using OscOS to send longer soundfiles into the stratophere
+//distortion does occur in large waveforms in the low register (the sinc used is not large enough to compensate for the large buffer size), so switch to BufRead in the bottom octaves
+p = Platform.resourceDir +/+ "sounds/a11wlk01.wav";
+b = Buffer.read(s, p);
+(
+    {
+	var fund_of_buf = 1/BufDur.kr(b);
+        var freq = MouseY.kr(fund_of_buf/8,fund_of_buf*(2**10.5), 1);
+        var phase = LFSaw.ar(freq).range(0,1);
+        
+        var osc = OscOS.ar(b,phase,1,MouseX.kr,0);
+        var br = BufRd.ar(1, b, phase*BufFrames.kr(b), 1, 4);
+
+        //will crossfade with 
+        var cross = LinXFade2.ar(br, osc, (freq.abs-1).clip(0,400).linlin(0,8,-1,1).poll);
+
+        cross = HPF.ar(cross, 20);
+        
+        cross.dup*0.2
+    }.scope
+)
+
+(
+    w = Signal.sineFill(4096, 1.0/(1..512)*([1,0]!256).flatten);
+~square_wave = Buffer.loadCollection(s, w);
+
+SynthDef("square", {|freq=43, gate = 1|
+    var phase = LFSaw.ar(freq).range(0,1);
+    var env = Env.asr.kr(2, gate);
+
+    var out = OscOS.ar(~square_wave, phase,  oversample:1);
+    Out.ar(0, out.dup*env*0.05)
+}).load(s)
+)
+
+
+//a polyphonic keyboard
+(
+    var notes = List.newClear(128);
+
+    MIDIClient.init;
+    MIDIIn.connectAll;
+
+    MIDIFunc.noteOn({|val, num|
+        notes[num] = Synth("square", [\freq, num.midicps]);
+    });
+
+    MIDIFunc.noteOff({|val, num|
+        notes[num].set(\gate, 0)
+    });
+
+)
+
 
 ::

@@ -635,7 +635,7 @@ ShaperOS2 : PureUGen {
 
 OscOS : PureUGen {
 	*ar {
-		arg bufnum, phase, buf_divs = 1, buf_loc, oversample = 1, mul = 1.0, add = 0.0;
+		arg bufnum, phase, buf_divs = 1, buf_loc=0, oversample = 1, mul = 1.0, add = 0.0;
 		if(phase.rate!='audio'){phase = K2A.ar(phase)};
 		if(buf_loc.rate!='audio'){buf_loc = K2A.ar(buf_loc)};
 		bufnum.isNil.if {"Invalid buffer".throw};
@@ -667,7 +667,7 @@ OscOS2 : PureUGen {
 OscOS3 : PureUGen {
 
 	*ar {
-		arg sound_buf, phase_buf=(-1), freq, phase, sync_trig, buf_divs, buf_loc, num_chans, chan_loc, phase_buf_divs, phase_buf_loc, oversample = 1, mul = 1.0, add = 0.0;
+		arg sound_buf, phase_buf=(-1), freq=100, phase=0, sync_trig=0, buf_divs = 1, buf_loc=0, num_chans=1, chan_loc=0, phase_buf_divs=1, phase_buf_loc=0, oversample = 1, mul = 1.0, add = 0.0;
 		var out;
 
 		if(freq.rate!='audio'){freq = K2A.ar(freq)};

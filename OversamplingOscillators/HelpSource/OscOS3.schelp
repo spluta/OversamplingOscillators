@@ -94,10 +94,9 @@ INSTANCEMETHODS::
 EXAMPLES::
 
 code::
-
 //create a 4 oscillator variable wavetable
 (
-    ~fft_size = 2048;
+    ~fft_size = 4096;
     ~signal = Signal.sineFill(~fft_size, [1])
         .addAll(Env([0,1,-1,0],[1,2,1]).asSignal(~fft_size))
         .addAll(Env([0,1,1,-1,-1,0],[0,1,0,1,0]).asSignal(~fft_size))
@@ -120,6 +119,8 @@ code::
 //the file is saved here, if it doesn't load properly above
 ~buf3D = Buffer.read(s, Platform.defaultTempDir++"oscos3d_temp2.wav");
 
+~buf3D.free
+
 //play the buffer back with no phase buffer, which uses an internal ramp as the lookup
 {OscOS3.ar(~buf3D, -1, 43, 0, 0, 4, MouseX.kr, ~buf3D.numChannels, MouseY.kr, 2, 0, 2).dup*0.2}.scope;
 
@@ -127,8 +128,8 @@ code::
 ({
     var mouse = MouseY.kr;
     var freq = mouse.lincurve(0,1,0.001,SampleRate.ir/2, 4).poll;
-    var buf_loc = freq.abs.curvelin(43,SampleRate.ir/4,0,~buf3D.numChannels, 8).floor.poll;
-    OscOS3.ar(~buf3D, -1, freq, 0, 0, 4, MouseX.kr, ~buf3D.numChannels, MouseY.kr, 2, 0, 2).dup*0.2
+    var chan_loc = freq.abs.curvelin(43,SampleRate.ir/4,0,~buf3D.numChannels, 8).floor.poll;
+    OscOS3.ar(~buf3D, -1, freq, 0, 0, 4, MouseX.kr, ~buf3D.numChannels, chan_loc/~buf3D.numChannels, -1, 0).dup*0.2
 }.scope;
 )
 //load up a saw for the subsequent examples
@@ -174,7 +175,8 @@ code::
     var mouse = MouseY.kr;
     var freq = mouse.lincurve(0,1,0.001,2000, 4)+(SawOS.ar(MouseX.kr(20,2000), 0, 2)*2000);
     var buf_loc = freq.abs.curvelin(43,SampleRate.ir/2,0,~saw_buf.numChannels, 8).poll;
-    OscOS3.ar(~saw_buf, -1, freq, 0, 0, 1, 0, ~saw_buf.numChannels, buf_loc/~saw_buf.numChannels, 2, 0, 4).dup*0.1;
+    var sig = OscOS3.ar(~saw_buf, -1, freq, 0, 0, 1, 0, ~saw_buf.numChannels, buf_loc/~saw_buf.numChannels, 2, 0, 4).dup*0.1;
+    LeakDC.ar(sig)
 }.scope;
 )
 
@@ -190,7 +192,7 @@ code::
 
     LocalOut.ar(sig);
 
-    sig.dup*0.1
+    LeakDC.ar(sig).dup*0.1
 
 }.scope;
 )
@@ -240,12 +242,15 @@ code::
 
 )
 
+~buf3D = Buffer.read(s, Platform.defaultTempDir++"oscos3d_temp2.wav");
+
 (
     {
         var root = 33.midicps;
         var freqs = [root, root*5, root*7, root*3];
         var buf_locs = freqs.abs.explin(43,SampleRate.ir/2,0,~buf3D.numChannels, 8);
-        Splay.ar(OscOS3.ar(~buf3D, -1, freqs, 0, 0, 4, LFTri.ar(0.1).range(0.25,1), ~buf3D.numChannels, buf_locs/~buf3D.numChannels, 2, 0, 2))*0.1
+        var sig = Splay.ar(OscOS3.ar(~buf3D, -1, freqs, 0, 0, 4, LFTri.ar(0.1).range(0.25,1), ~buf3D.numChannels, buf_locs/~buf3D.numChannels, 2, 0, 2))*0.1;
+        HPF.ar(sig, root)
     }.scope
 )
 
@@ -293,9 +298,26 @@ code::
 (
     {
         var mouse = MouseY.kr;
-        var freq = mouse.lincurve(0,1,0.001,4000, 4);
-        var buf_loc = freq.abs.curvelin(43,SampleRate.ir/2,0,~commercial_buf.numChannels, 8).poll;
+        var freq = mouse.lincurve(0,1,0.001,4000, 4).poll;
+        var buf_loc = freq.abs.curvelin(43,SampleRate.ir/2,0,~commercial_buf.numChannels, 8);
         OscOS3.ar(~commercial_buf, -1, freq, 0, 0, 93, MouseX.kr, ~commercial_buf.numChannels, buf_loc/~commercial_buf.numChannels, 2, 0, 2).dup*0.1
     }.scope;
 )
+
+//we can also use the oversampling to just play back a sound file really fast
+
+(
+    ~path = Platform.resourceDir +/+ "sounds/a11wlk01.wav";
+    ~long_buf = Buffer.read(s, ~path);
+)
+
+(
+    {
+        var mouse = MouseY.kr;
+        var fund = SampleRate.ir/2/BufFrames.kr(~long_buf);
+        var freq = mouse.lincurve(0,1,fund/8,fund*800, 4).poll;
+        OscOS3.ar(~long_buf, -1, freq, 0, 0, 1, 0, 1, 0, 2, 0, 4).dup*0.1
+    }.scope;
+)
+
 ::

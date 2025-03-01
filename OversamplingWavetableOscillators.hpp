@@ -3,44 +3,9 @@
 #include "SC_PlugIn.hpp"
 #include "VariableOversampling.hpp"
 #include <array>
+#include "BufUnit.cpp"
+#include "Extras.cpp"
 
-namespace Extras {
-  class SawOSNext {
-    public:
-      SawOSNext();
-      ~SawOSNext();
-      float m_lastPhase {0.f};
-      double m_phase {0.0};
-      float next(float freq, float phaseIn, double m_freqMul);
-      void reset(double phaseIn);
-    private:
-
-  };
-
-  class ProcessFuncs {
-    public:
-      ProcessFuncs();
-      ~ProcessFuncs();
-      float get_phase(const float* phase_buf_data, float phase, float phase_buf_divs, float phase_buf_loc, int phase_table_size, float phase_fmaxindex);
-      float get_out(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc);
-      float get_spaced_out(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int spacing, float sinc_crossfade, int num_chans, int chan_loc);
-      
-      float get_out_no_interp(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc);
-      float get_sinc_sum(const float* table, int table_size, int index, int ibuf_loc, int sinc_offset, int num_chans, int chan_loc);
-      float get_spaced_sinc_sum(const float* table, int table_size, float index, int spacing, int ibuf_loc, int num_chans, int chan_loc);
-
-      std::array<int, 8> sinc_points;
-      int sinc_len{8};
-      int sinc_half_len{4};
-      int sinc_table_size{8192};
-      float fmax_sinc_offset{1024.f};
-      int max_sinc_offset{1024};
-      std::array<float, 8192>m_sinc_table;
-    
-    private:
-
-  };
-}
 
 namespace BuchlaFoldOS {
 
@@ -97,22 +62,6 @@ private:
 };
 
 } // namespace SergeFoldOS
-
-namespace BufUnit {
-  class BufUnit : public SCUnit {
-    public:
-
-    BufUnit();
-
-    // Destructor
-    ~BufUnit();
-      float m_fbufnum;
-      SndBuf* m_buf;
-    
-      bool GetTable(World* world, float fbufnum, int inNumSamples, const SndBuf*& buf, const float*& bufData, int& tableSize);
-    private:
-};
-} // namespace BufUnit
 
 namespace ShaperOS {
 
@@ -193,95 +142,6 @@ private:
 
 } // namespace ShaperOS2
 
-// namespace OscOS {
-
-// class OscOS : public SCUnit {
-// public:
-//   OscOS();
-
-//   // Destructor
-//   ~OscOS();
-//   VariableOversampling<> oversample;
-//   VariableOversampling<> upsample_buf_loc;
-//   float* m_inbuf;
-//   float m_fbufnum;
-//   SndBuf* m_buf;
-//   BufUnit::BufUnit buf_unit;
-//   float m_last_phase;
-//   float m_last_buf_loc;
-//   float m_oversampling_ratio;
-
-//   Extras::ProcessFuncs process_funcs;  
-  
-// private:
-//   // Calc function
-//   void next_aa(int nSamples);
-
-//   float next_os(const float* table0, float phase, float buf_divs, float buf_loc, int table_size, float fmaxindex);
-
-  
-//   enum InputParams { BufNum, Phase, BufDivs, BufLoc, OverSample, NumInputParams };
-//   enum Outputs { Out1, NumOutputParams };
-
-//   float *osBuffer;
-//   float *upsample_buf;
-
-//   int m_oversamplingIndex{0};
-// };
-
-// } // namespace OscOS
-
-namespace OscOS2 {
-
-class OscOS2 : public SCUnit {
-public:
-  OscOS2();
-
-  // Destructor
-  ~OscOS2();
-  VariableOversampling<> oversample;
-  VariableOversampling<> upsample_buf_loc;
-  VariableOversampling<> upsample_phase_buf_loc;
-
-  float* m_inbuf;
-  float m_fbufnum;
-
-  SndBuf* m_buf;
-  BufUnit::BufUnit buf_unit;
-  BufUnit::BufUnit phase_buf_unit;
-
-  float m_freq_past{0.f};
-  float i_phase{in0(Phase)};
-  float m_freqMul{2.0f/(float)sampleRate()};
-
-  float m_last_phase;
-  float m_last_buf_loc;
-  float m_oversampling_ratio;
-  Extras::SawOSNext saw;
-  Extras::ProcessFuncs process_funcs;
-
-  // float get_phase(const float* phase_buf_data, float phase, float phase_buf_divs, float phase_buf_loc, int phase_table_size, float phase_fmaxindex);
-
-  // float get_out(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc);
-
-private:
-
-  void next_aa(int nSamples);
-  float next_os(const float* buf_data, const float* phase_buf_data, const float freq, const float phase, float buf_divs, float buf_loc, float phase_buf_divs, float phase_buf_loc, int each_table_size, float fmaxindex, int phase_table_size, float phase_fmaxindex);
-  
-  float Perform(const float* buf_data, const float* phase_buf_data, float phase, float buf_divs, float buf_loc, float phase_buf_divs, float phase_buf_loc, int each_table_size, float fmaxindex, int phase_table_size, float phase_fmaxindex);
-
-  enum InputParams { BufNum, PhaseBuf, Freq, Phase, BufDivs, BufLoc, PhaseBufDivs, PhaseBufLoc, OverSample, NumInputParams };
-  enum Outputs { Out1, NumOutputParams };
-
-  float *os_buffer;
-  float *os_buf_loc;
-  float *os_phase_buf_loc;
-
-  int m_oversampling_index{0};
-};
-
-} // namespace OscOS2
 
 namespace OscOS3 {
 
@@ -353,7 +213,7 @@ namespace OscOS {
     float m_oversampling_ratio;
     int counter{0};
   
-    Extras::ProcessFuncs process_funcs;  
+    SincExtras::SincFuncs process_funcs;  
     
   private:
     // Calc function
