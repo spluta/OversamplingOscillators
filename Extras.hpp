@@ -50,7 +50,9 @@ namespace Extras {
         float get_phase(const float* phase_buf_data, float phase, float phase_buf_divs, float phase_buf_loc, int phase_table_size, float phase_fmaxindex);
         float get_out(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc);
 
-        float get_out_quadratic(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc, int wrap_clip=0);
+        template<typename T>
+        float get_out_quadratic(const T* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc, int wrap_clip);
+
         float get_out_no_interp(const float* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc);
         float get_sinc_sum(const float* table, int table_size, int index, int ibuf_loc, int sinc_offset, int num_chans, int chan_loc);
 

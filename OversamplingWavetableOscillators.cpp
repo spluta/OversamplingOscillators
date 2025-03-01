@@ -91,7 +91,7 @@ namespace SergeFoldOS {
   {
     const float samplerate = (float) sampleRate();
 
-    sergeWavetable = getSergeWavetable();
+    sergeWavetable = getSergeWavetable().data();
 
     oversample.reset(samplerate);
     m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
@@ -106,19 +106,19 @@ namespace SergeFoldOS {
   SergeFoldOS::~SergeFoldOS() {}
 
   float SergeFoldOS::next(float sig, float amp) {
-    double out = tanh(sig*amp);
-    float findex = ((out*0.5+0.5)*(float)sergeWavetable.size());
-    float frac = findex - (int)findex;
-    int index = (int)findex;
+    float out = tanh(sig*amp)*0.5f+0.5f;
+    // float findex = ((out*0.5+0.5)*(float)sergeWavetable.size());
+    // float frac = findex - (int)findex;
+    // int index = (int)findex;
 
-    if (index < 0) {
-      index = 0;
-    }
-    else if (index > sergeWavetable.size()-2) {
-      index = sergeWavetable.size()-2;
-    }
+    // if (index < 0) {
+    //   index = 0;
+    // }
+    // else if (index > sergeWavetable.size()-2) {
+    //   index = sergeWavetable.size()-2;
+    // }
 
-    out = sergeWavetable[index]*(1.0f-frac) + sergeWavetable[index+1]*frac;
+    out = process_funcs.get_out_quadratic(sergeWavetable, out, 1.0f, 0.f, 1000, 1000.f, 1, 0, 1);
 
     out = tanh(out);
 
@@ -179,27 +179,15 @@ namespace ShaperOS {
   } 
   ShaperOS::~ShaperOS() {}
 
- float ShaperOS::Perform(const float* table0, float in, float fmaxindex) {
-
-  float findex = ((in*0.5+0.5)*fmaxindex);
-    float frac = findex - (int)findex;
-    int index = (int)findex;
-
-    index = sc_clip(index, 0.f, fmaxindex-1.f);
-
-    float out = table0[index]*(1.0f-frac) + table0[index+1]*frac;
-
-  return out;
-}
-
   float ShaperOS::next_os(const float* table0, float in, float fmaxindex)
   {
     float out;
-    
+    in = (in+1.f)*0.5f;
     oversample.upsample(in);
 
     for (int k = 0; k < m_oversampling_ratio; k++){
-      osBuffer[k] = Perform(table0, osBuffer[k], fmaxindex);
+      float ramp = sc_clip(osBuffer[k], 0.f, 1.f);
+      osBuffer[k] = process_funcs.get_out_quadratic(table0, ramp, 1.0f, 0.f, (int)fmaxindex, fmaxindex, 1, 0, 1);
     }
     if (m_oversamplingIndex != 0)
       out = oversample.downsample();
@@ -280,7 +268,6 @@ namespace ShaperOS2 {
     upsample_buf_loc.upsample(buf_loc1);
 
     for (int k = 0; k < m_oversampling_ratio; k++){
-      //osBuffer[k] = Perform(table0, upsample_input_ptr[k], buf_divs, upsample_buf_ptr[k], table_size, fmaxindex);
       float val = sc_clip(upsample_input_ptr[k],0.0,1.0);
       osBuffer[k] = process_funcs.get_out_quadratic(table0, val, buf_divs, buf_loc, each_table_size, fmaxindex, 1, 0, 1); //only one channel
     }

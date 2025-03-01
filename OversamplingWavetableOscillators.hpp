@@ -44,8 +44,9 @@ public:
   // Destructor
   ~SergeFoldOS();
   VariableOversampling<> oversample;
-  std::array<double, 1000> sergeWavetable;
+  float* sergeWavetable;
   float m_oversampling_ratio;
+  Extras::ProcessFuncs process_funcs;
 
 private:
   // Calc function
@@ -72,12 +73,12 @@ public:
   // Destructor
   ~ShaperOS();
   VariableOversampling<> oversample;
-  //std::array<double, 1000> sergeWavetable;
   float* m_inbuf;
   float m_fbufnum;
   SndBuf* m_buf;
   BufUnit::BufUnit buf_unit;
   float m_oversampling_ratio;
+  Extras::ProcessFuncs process_funcs;
   
 
 private:
