@@ -121,93 +121,32 @@ namespace VariableRamp
   }
 } //namespace VariableRamp
 
-//wow - this is really inefficient
-namespace SawOS8
+namespace AccumRamp
 {
 
-  SawOS8Object::SawOS8Object()
-  {
-  }
+  AccumRamp::~AccumRamp() {}
 
-  SawOS8Object::~SawOS8Object() {}
-
-  void SawOS8Object::setBuffers(int index_in, const float samplerate, const float buffersize, float freq_mul)
+  void AccumRamp::next(int nSamples)
   {
-    oversample.reset(samplerate);
-    over_sampling_index = index_in;
-    oversample.setOversamplingIndex(over_sampling_index);
-    over_sampling_ratio = oversample.getOversamplingRatio();
-    os_buffer = oversample.getOSBuffer();
-    outbuf_temp = (float *)malloc(buffersize * sizeof(float));
-    m_freqmul = freq_mul;
-  }
+    // float freq_in = sc_clip(in0(0), 0.f, 2000.f);
+    // float freqSpread_in = sc_clip(in0(1), 0.f, 4.f);
+    const float* slope_in = in(0);
+    const float* offset_in = in(1);
+    const float* trig_reset = in(2);
 
-  void SawOS8Object::doit(int nSamples, const float* freq, const float* phase)
-  {
+    float* outs = out(0);
+
     for (int i = 0; i < nSamples; ++i)
     {
-      float out;
-      for (int k = 0; k < over_sampling_ratio; k++)
-        os_buffer[k] = saw.next(freq[i], phase[i], m_freqmul / over_sampling_ratio);
-      
-      
-      if (over_sampling_index != 0)
-        out = oversample.downsample();
+      if( m_last_trig<=0.f && trig_reset[i]>0.f )
+        m_phase = offset_in[i];
       else
-        out = os_buffer[0];
-      outbuf_temp[i] = out;
+        m_phase = m_phase+slope_in[i];
+      m_last_trig = trig_reset[i];
+      outs[i] = m_phase;
     }
   }
-
-  SawOS8::SawOS8()
-  {
-    const float samplerate = (float) sampleRate();
-    const float buffersize = (float) bufferSize();
-
-    m_oversamplingIndex = sc_clip((int)in0(OverSample), 0, 4);
-    for(int i = 0; i < 8; i++)
-      saw_objects[i].setBuffers(m_oversamplingIndex, samplerate, buffersize, m_freqMul);
-
-    mCalcFunc = make_calc_function<SawOS8, &SawOS8::next_aa>();
-    next_aa(1);
-  }
-  SawOS8::~SawOS8() {}
-
-  void SawOS8::next_aa(int nSamples)
-  {
-
-    const float *freq = in(Freq);
-    const float *phase = in(Phase);
-    float *outbuf = out(Out1);
-
-	  std::thread th0(&SawOS8Object::doit, &saw_objects[0], nSamples, freq, phase);
-    std::thread th1(&SawOS8Object::doit, &saw_objects[1], nSamples, freq, phase);
-    std::thread th2(&SawOS8Object::doit, &saw_objects[2], nSamples, freq, phase);
-    std::thread th3(&SawOS8Object::doit, &saw_objects[3], nSamples, freq, phase);
-    std::thread th4(&SawOS8Object::doit, &saw_objects[4], nSamples, freq, phase);
-    std::thread th5(&SawOS8Object::doit, &saw_objects[5], nSamples, freq, phase);
-    std::thread th6(&SawOS8Object::doit, &saw_objects[6], nSamples, freq, phase);
-    std::thread th7(&SawOS8Object::doit, &saw_objects[7], nSamples, freq, phase);
-
-    th0.join();
-    th1.join();
-    th2.join();
-    th3.join();
-    th4.join();
-    th5.join();
-    th6.join();
-    th7.join();
-
-    for (int i = 0; i < nSamples; ++i)
-    {
-      outbuf[i]=0.f;
-      for (int j=0; j<8; j++)
-        outbuf[i]+=saw_objects[j].outbuf_temp[i];
-    }
-  }
-} //namespace SawOS8
-
-
+} //namespace AccumRamp
 
 namespace SinOscOS
 {

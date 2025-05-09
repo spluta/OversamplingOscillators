@@ -43,7 +43,7 @@ namespace SincExtras {
 
     int spacing2 = spacing1*2;
 
-    buf_loc = buf_loc*(float)(buf_divs-1);
+    buf_loc = sc_clip(buf_loc, 0.f, 1.f)*(float)(buf_divs-1);
     int ibuf_loc = (int)buf_loc;
 
     float findex = (ramp*fmaxindex);
@@ -251,6 +251,8 @@ namespace Extras {
     template<typename T>
     float ProcessFuncs::get_out_quadratic(const T* buf_data, float ramp, float buf_divs, float buf_loc, int each_table_size, float fmaxindex, int num_chans, int chan_loc, int wrap_clip) {
       
+      buf_loc = sc_clip(buf_loc, 0.f, 1.f);
+
       buf_loc = buf_loc*(float)(buf_divs-1);
       int ibuf_loc = (int)buf_loc;
   

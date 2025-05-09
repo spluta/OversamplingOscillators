@@ -37,7 +37,7 @@ namespace BuchlaFoldOS
   float BuchlaFoldOS::next(float sig, float amp) {
     float out;
     if(amp>0.f){
-      sig = sig * amp;
+      sig = sig * amp*0.6;
       float sign = (sig >= 0.0f) ? 1.0f : -1.0f;
       float v1 = buchla_cell(sig, sign, 0.6f, 0.8333f, 0.5f, 12.0f);
       float v2 = buchla_cell(sig, sign, 2.994f, 0.3768f, 1.1281f, 27.777f);
@@ -47,6 +47,7 @@ namespace BuchlaFoldOS
       float v6 = sig * 5.0f;
       out = ((v1 + v2 + v3)*(-1.f))+ v4 + v5 + v6;
       out = out / 5.0f;
+      out = out*1.666666;
     } else {
       out = 0.f;
     }
@@ -108,11 +109,11 @@ namespace SergeFoldOS {
   SergeFoldOS::~SergeFoldOS() {}
 
   float SergeFoldOS::next(float sig, float amp) {
-    float out = tanh(sig*amp)*0.5f+0.5f;
+    float out = tanh(sig*amp*0.06)*0.5f+0.5f;
 
     out = process_funcs.get_out_quadratic(sergeWavetable, out, 1.0f, 0.f, 1000, 999.f, 1, 0, 1);
 
-    out = tanh(out);
+    out = tanh(out*2.8); //*16.6666
 
     return out;
   }
@@ -178,8 +179,7 @@ namespace ShaperOS {
     oversample.upsample(in);
 
     for (int k = 0; k < m_oversampling_ratio; k++){
-      float ramp = sc_clip(osBuffer[k], 0.f, 1.f);
-      osBuffer[k] = process_funcs.get_out_quadratic(table0, ramp, 1.0f, 0.f, (int)fmaxindex, fmaxindex, 1, 0, 1);
+      osBuffer[k] = process_funcs.get_out_quadratic(table0, osBuffer[k], 1.0f, 0.f, (int)fmaxindex, fmaxindex, 1, 0, 1);
     }
     if (m_oversamplingIndex != 0)
       out = oversample.downsample();
@@ -364,37 +364,53 @@ float OscOS3::next_os(const float* buf_data, const float* phase_buf_data, const 
   {
     float out;
 
-    buf_loc = sc_clip(buf_loc, 0.f, 1.0f);
     chan_loc = sc_clip(chan_loc, 0.f, 1.0f-1.f/num_chans);
     phase_buf_loc = sc_clip(phase_buf_loc, 0.f, 1.0f);
 
-    //upsample the inputs
-
-    upsample_buf_loc.upsample(buf_loc);
-    upsample_chan_loc.upsample(chan_loc);
-    upsample_phase_buf_loc.upsample(phase_buf_loc);
-
-    for (int k = 0; k < m_oversampling_ratio; k++){
-      float saw_phase = saw.next(freq, phase, m_freqMul / m_oversampling_ratio)*0.5+0.5;
-
-      if (num_chans <= 1.f){
-        os_buffer[k] = Perform(buf_data, phase_buf_data, saw_phase, buf_divs, os_buf_loc[k], num_chans, 0.f, phase_buf_divs, os_phase_buf_loc[k], each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
+    if(m_oversampling_index<1){
+      //no oversampling
+      float saw_phase = saw.next(freq, phase, m_freqMul)*0.5+0.5;
+      if(num_chans <= 1.f){
+        out = Perform(buf_data, phase_buf_data, saw_phase, buf_divs, buf_loc, num_chans, 0.f, phase_buf_divs, phase_buf_loc, each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
       } else {
-        float full_chan_loc = os_chan_loc[k]*(num_chans-1.f);
+        float full_chan_loc = chan_loc*(num_chans-1.f);
         float low_chan_loc = floor(full_chan_loc);
         float high_chan_loc = ceil(full_chan_loc);
         float frac = full_chan_loc - low_chan_loc;
 
-        float chan0 = Perform(buf_data, phase_buf_data, saw_phase, buf_divs, os_buf_loc[k], num_chans, low_chan_loc, phase_buf_divs, os_phase_buf_loc[k], each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
-        float chan1 = Perform(buf_data, phase_buf_data, saw_phase, buf_divs, os_buf_loc[k], num_chans, high_chan_loc, phase_buf_divs, os_phase_buf_loc[k], each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
+        float chan0 = Perform(buf_data, phase_buf_data, saw_phase, buf_divs, buf_loc, num_chans, low_chan_loc, phase_buf_divs, phase_buf_loc, each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
+        float chan1 = Perform(buf_data, phase_buf_data, saw_phase, buf_divs, buf_loc, num_chans, high_chan_loc, phase_buf_divs, phase_buf_loc, each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
 
-        os_buffer[k] = chan0*(1.0f-frac) + chan1*frac;
+        out = chan0*(1.0f-frac) + chan1*frac;
       }
-    } 
+    } else {
+        //upsample the inputs
+        upsample_buf_loc.upsample(buf_loc);
+        upsample_chan_loc.upsample(chan_loc);
+        upsample_phase_buf_loc.upsample(phase_buf_loc);
+
+        for (int k = 0; k < m_oversampling_ratio; k++){
+          float saw_phase = saw.next(freq, phase, m_freqMul / m_oversampling_ratio)*0.5+0.5;
+
+          if (num_chans <= 1.f){
+            os_buffer[k] = Perform(buf_data, phase_buf_data, saw_phase, buf_divs, os_buf_loc[k], num_chans, 0.f, phase_buf_divs, os_phase_buf_loc[k], each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
+          } else {
+            float full_chan_loc = os_chan_loc[k]*(num_chans-1.f);
+            float low_chan_loc = floor(full_chan_loc);
+            float high_chan_loc = ceil(full_chan_loc);
+            float frac = full_chan_loc - low_chan_loc;
+
+            float chan0 = Perform(buf_data, phase_buf_data, saw_phase, buf_divs, os_buf_loc[k], num_chans, low_chan_loc, phase_buf_divs, os_phase_buf_loc[k], each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
+            float chan1 = Perform(buf_data, phase_buf_data, saw_phase, buf_divs, os_buf_loc[k], num_chans, high_chan_loc, phase_buf_divs, os_phase_buf_loc[k], each_table_size, fmaxindex, each_phase_table_size, phase_fmaxindex);
+
+            os_buffer[k] = chan0*(1.0f-frac) + chan1*frac;
+          }
+        } 
+    }
     if(m_oversampling_index>0){
       out = oversample.downsample();
     } else {
-      out = os_buffer[0];
+      out = out;
     }
     return out;
   }

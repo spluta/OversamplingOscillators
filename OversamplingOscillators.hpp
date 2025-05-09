@@ -64,49 +64,19 @@ class VariableRamp : public SCUnit {
 };
 } //namespace VariableRamp
 
-namespace SawOS8 {
+namespace AccumRamp {
 
-class SawOS8Object {
-  public:
-    SawOS8Object();
-    ~SawOS8Object();
-    void setBuffers(int index_in, const float samplerate, const float buffersize, float freq_mul);
-    SawOS::SawOSNext saw;
-    VariableOversampling<> oversample;
-    float* outbuf_temp;
-    float* os_buffer;
-    float m_freqmul;
-    int over_sampling_ratio;
-    int over_sampling_index;
-    void doit(int nSamples, const float* freq, const float* phase);
-};
-
-class SawOS8 : public SCUnit {
-  public:
-    SawOS8();
-    ~SawOS8();
-
-    VariableOversampling<> oversamplers [8];
-    SawOS8Object saw_objects [8];
-    // void SawOS8::next_thread(SawOS::SawOSNext saw, VariableOversampling<> oversample, float* osBuffer, const float* freq, const float* phase, float* outbuf_temp, int nSamples, int over_sampling_ratio);
-
-  private:
-    // Calc function
-    void next_aa(int nSamples);
-
-    enum InputParams { Freq, Phase, OverSample, NumInputParams };
-    enum Outputs { Out1, NumOutputParams };
-
-    // float *osBuffers [8];
-    // float *outbufs_temp [8];
-    // //float *outbuf_temp;
-    // //std::thread threads [8];
-
-    float sample_rate;
-    float m_freqMul{2.0f/(float)sampleRate()};
-    int m_oversamplingIndex{(int)in0(OverSample)};
+  class AccumRamp : public SCUnit {
+    public:
+    AccumRamp();
+      ~AccumRamp();
+      double m_phase {0.0};
+      float m_last_trig{0.f};
+      void next(int nSamples);
+    private:
+  
   };
-} //namespace SawOS8
+} //namespace VariableRamp
 
 namespace SinOscOS {
   class SinTable {

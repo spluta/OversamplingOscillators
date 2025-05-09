@@ -11,6 +11,20 @@ VariableRamp : UGen {
 	}
 }
 
+// AccumRamp : UGen {
+// 	*ar { |slope=0, offset_in = 0, trig_reset=0, mul = 1, add = 0|
+// 		if(slope.rate!='audio'){slope = K2A.ar(slope)};
+// 		if(offset_in.rate!='audio'){offset_in = K2A.ar(offset_in)};
+// 		if(trig_reset.rate!='audio'){trig_reset = K2A.ar(trig_reset)};
+// 		^this.multiNew('audio', freq, trig_reset).madd(mul, add);
+// 	}
+
+// 	checkInputs {
+// 		/* TODO */
+// 		^this.checkValidInputs;
+// 	}
+// }
+
 SawOS : UGen {
 	*ar { |freq=440, phase=0, oversample=1, mul = 1, add = 0|
 		if(freq.rate!='audio'){freq = K2A.ar(freq)};

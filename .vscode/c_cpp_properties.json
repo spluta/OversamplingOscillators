@@ -4,9 +4,9 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/Users/spluta1/Documents/SC/SuperColliderBuild/SuperCollider/**",
-                "/Users/spluta1/Documents/SC/SuperColliderBuild/SuperCollider/include/plugin_interface",
-                "/Users/spluta1/Documents/SC/SuperColliderBuild/SuperCollider/include/common"
+                "/Users/spluta1/Dev/SC/supercollider-src/**",
+                "/Users/spluta1/Dev/SC/supercollider-src/include/plugin_interface",
+                "/Users/spluta1/Dev/SC/supercollider-src/include/common"
             ],
             "defines": [],
             "macFrameworkPath": [
