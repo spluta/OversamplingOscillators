@@ -330,7 +330,7 @@ private:
   float m_width{in0(Width)};
   float m_invwidth{2.f/m_width};
   float m_inv1width{2.f/(1.f - m_width)};
-  float m_freqMul{1.0f/(float)sampleRate()};
+  float m_freqMul{2.0f/(float)sampleRate()};
   int m_oversamplingIndex{0};
 };
 

@@ -671,6 +671,7 @@ namespace VarSawOS
   float VarSawOS::next(float freq, float phase, float width)
   {
     float out;
+    width = sc_clip(width, 0.0001f, 0.9999f);
     float invwidth = 2.f / width;
     float inv1width = 2.f / (1 - width);
 
@@ -679,12 +680,18 @@ namespace VarSawOS
     for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
     {
       float temp = osBuffer[i2] / 2 + 0.5;
-      osBuffer[i2] = temp < width ? temp * invwidth : (1.f - temp) * inv1width;
+      std::cout << "temp: " << temp << " width: " << width << " ";
+      if (temp < width) {
+          osBuffer[i2] = temp * invwidth;
+      } else {
+          osBuffer[i2] = (1.f - temp) * inv1width;
+      }
+      std::cout << "osBuffer[" << i2 << "]: " << osBuffer[i2] << std::endl;
     }
     if (m_oversamplingIndex != 0)
       out = oversample.downsample() - 1.f;
     else
-      out = osBuffer[0];
+      out = osBuffer[0] - 1.f;
     return out;
   }
 
