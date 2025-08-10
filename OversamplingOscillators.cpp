@@ -671,7 +671,6 @@ namespace VarSawOS
   float VarSawOS::next(float freq, float phase, float width)
   {
     float out;
-    width = sc_clip(width, 0.0001f, 0.9999f);
     float invwidth = 2.f / width;
     float inv1width = 2.f / (1 - width);
 
@@ -703,7 +702,8 @@ namespace VarSawOS
 
     for (int i = 0; i < nSamples; ++i)
     {
-      outbuf[i] = next(freq[i], phase[i], inWidth[i]);
+      float width = sc_clip(inWidth[i], 0.0001f, 0.9999f);
+      outbuf[i] = next(freq[i], phase[i], width);
     }
   }
 
