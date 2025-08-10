@@ -680,13 +680,11 @@ namespace VarSawOS
     for (int i2 = 0; i2 < oversample.getOversamplingRatio(); i2++)
     {
       float temp = osBuffer[i2] / 2 + 0.5;
-      std::cout << "temp: " << temp << " width: " << width << " ";
       if (temp < width) {
           osBuffer[i2] = temp * invwidth;
       } else {
           osBuffer[i2] = (1.f - temp) * inv1width;
       }
-      std::cout << "osBuffer[" << i2 << "]: " << osBuffer[i2] << std::endl;
     }
     if (m_oversamplingIndex != 0)
       out = oversample.downsample() - 1.f;
